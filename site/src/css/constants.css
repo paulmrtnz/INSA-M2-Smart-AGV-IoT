@@ -1,0 +1,15 @@
+:root {
+    --palette-color-1: #fffafb;
+    --palette-color-2: #7de2d1;
+    --palette-color-3: #339989;
+    --palette-color-4: #2b2c28;
+    --palette-color-5: #131515;
+
+    --primary-color: var(--palette-color-3);
+    --secondary-color: var(--palette-color-2);
+
+    --background-color: var(--palette-color-1);
+
+    --text-primary: var(--palette-color-5);
+    --text-secondary: var(--palette-color-4);
+}
