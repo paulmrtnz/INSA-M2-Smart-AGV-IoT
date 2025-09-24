@@ -13,16 +13,17 @@
   <body>
     <header>
       <img
-        src="src/img/logo_noir.png"
+        src="src/img/logo_noir_seul.png"
         alt="Logo de PGP Solutions"
         class="logo"
       />
       <nav>
         <ul>
           <li><a href="#">Accueil</a></li>
-          <li><a href="#">Projets</a></li>
-          <li><a href="#">Services</a></li>
-          <li><a href="#">Contact</a></li>
+          <li><a href="#equipe">Équipe</a></li>
+          <li><a href="#projets">Projets</a></li>
+          <!-- <li><a href="#">Services</a></li> -->
+          <li><a href="#contact">Contact</a></li>
         </ul>
       </nav>
     </header>
@@ -37,7 +38,96 @@
           class="banner-img"
         />
       </div>
+      <section class="sec bg-primary" id="equipe">
+        <h2 class="font-title sec-title">Notre équipe</h2>
+
+        <p class="fs-l">
+          Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quia
+          incidunt sapiente, natus laudantium, esse quod error sunt modi fugiat
+          id consequuntur ullam impedit nobis aliquid voluptates dignissimos
+          magni cumque corporis?
+        </p>
+
+        <div class="team-wrapper">
+          <div class="team-member">
+            <img
+              src="https://media.istockphoto.com/id/1142192548/fr/vectoriel/profil-davatar-de-lhomme-silhouette-de-visage-m%C3%A2le-ou-ic%C3%B4ne-disolement-sur-le-fond.jpg?s=612x612&w=0&k=20&c=Fe6gJZnL9Lgli0B7cwhJEjG6vKMn-2tHKqSCvG1GHjw="
+              alt="Photo de Phu KHONG"
+            />
+            <p>Phu KHONG</p>
+          </div>
+          <div class="team-member">
+            <img
+              src="https://media.istockphoto.com/id/1142192548/fr/vectoriel/profil-davatar-de-lhomme-silhouette-de-visage-m%C3%A2le-ou-ic%C3%B4ne-disolement-sur-le-fond.jpg?s=612x612&w=0&k=20&c=Fe6gJZnL9Lgli0B7cwhJEjG6vKMn-2tHKqSCvG1GHjw="
+              alt="Photo de Phu KHONG"
+            />
+            <p>Guilherme DE CONTE MAZUR</p>
+          </div>
+          <div class="team-member">
+            <img
+              src="https://media.istockphoto.com/id/1142192548/fr/vectoriel/profil-davatar-de-lhomme-silhouette-de-visage-m%C3%A2le-ou-ic%C3%B4ne-disolement-sur-le-fond.jpg?s=612x612&w=0&k=20&c=Fe6gJZnL9Lgli0B7cwhJEjG6vKMn-2tHKqSCvG1GHjw="
+              alt="Photo de Phu KHONG"
+            />
+            <p>Paul MARTINEZ</p>
+          </div>
+        </div>
+      </section>
+      <section class="sec bg-light" id="projets">
+        <h2 class="font-title sec-title">Nos Projets</h2>
+        <p class="fs-l">
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Eius
+          assumenda repellendus labore, tempora unde dolores. Animi
+          exercitationem, quisquam dignissimos qui maxime esse deleniti tempore
+          corporis voluptatum reprehenderit sapiente recusandae ex? Lorem ipsum
+          dolor sit amet consectetur adipisicing elit. Commodi inventore ipsa
+          assumenda nihil cumque facere velit. Expedita aliquam, quam enim, ab
+          dolor recusandae fugit reiciendis nemo quisquam eum itaque labore.
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Eius minus
+          eligendi earum error facilis reprehenderit, officia consequatur nulla
+          dolores praesentium neque necessitatibus delectus totam? Totam enim
+          tempora similique expedita quos?Lorem ipsum dolor sit amet consectetur
+          adipisicing elit. Eos aliquam perspiciatis id inventore maxime alias,
+          atque amet nisi similique, sed nostrum praesentium! Vel vitae quidem
+          dolores incidunt perferendis? Fugit, natus?Lorem ipsum dolor sit amet
+          consectetur adipisicing elit. Explicabo blanditiis labore natus odio
+          eum ad incidunt velit dolorem, autem quisquam sint eius cupiditate,
+          tempora enim est. Ut ea quas tempora!
+        </p>
+      </section>
+      <section class="sec bg-primary" id="contact">
+        <h2 class="font-title sec-title">Nous contacter</h2>
+        <form action="#" class="contact-form" method="post">
+          <label for="name">Nom:</label>
+          <input type="text" id="name" name="name" required />
+
+          <label for="email">Email:</label>
+          <input type="email" id="email" name="email" required />
+
+          <label for="message">Message:</label>
+          <textarea id="message" name="message" rows="4" required></textarea>
+
+          <button type="submit">Envoyer</button>
+        </form>
+      </section>
     </main>
-    <footer></footer>
+    <footer class="bg-dark">
+      <div class="footer-wrapper">
+        <div>
+          <p class="text-display fs-xl">PGP Solutions</p>
+          <span>&copy; 2025 - Tous droits réservés.</span>
+        </div>
+        <ul>
+          <li><a href="#">Accueil</a></li>
+          <li><a href="#equipe">Équipe</a></li>
+          <li><a href="#projets">Projets</a></li>
+          <!-- <li><a href="#">Services</a></li> -->
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </div>
+    </footer>
+
+    <span class="btn-top">
+      <a href="#top" aria-label="Retour en haut de la page">&#10148;</a>
+    </span>
   </body>
 </html>
