@@ -7,8 +7,6 @@ BLECommand BLECommandType;
 void setup() {
   setup_BLE();
   setup_led_matrix();
-
-
 }
 
 void loop() {
@@ -21,7 +19,7 @@ void loop() {
       matrix_display(BLEBuffer);
       break;
     case BLE_TYPE_CONSOLE:
-      Serial.println((char*)BLEBuffer); // Afficher les données reçues sur le moniteur série
+      Serial.write(BLEBuffer, 16); // Affiche la réponse dans le moniteur série
       break;
     default:
       break;
