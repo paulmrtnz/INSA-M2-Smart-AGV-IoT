@@ -16,6 +16,7 @@ void setup() {
   pinMode(ML_Ctrl, OUTPUT);
   pinMode(MR_PWM, OUTPUT);
   pinMode(MR_Ctrl, OUTPUT);
+  Serial.begin(9600); // Start to communicate with 9600m/s
 
 
   digitalWrite(ML_PWM, LOW);
@@ -97,21 +98,33 @@ void turnDegrees(int degrees) {
 
 void loop()
 {
-  setSpeed(155);//  Speed (m/m) = (Wheel circumference × Motor RPM) / 60
+  setSpeed(155);//  Speed (m/s) = (pi * D × Motor RPM) / 60
+  // 150 RPM 
 
   moveForward();// go forward
   delay(1000); // wait for 1s
+
   moveBackward();// go backward
   delay(1000);// wait for 1s
   stopRobot();// stop the robot and wait for 2s
 
   turnLeft();// turn left
-  delay(500);// wait for 0.5s
+  delay(1000);// wait for 0.5s
+  stopRobot();
 
   turnRight();// turn right 
-  delay(500);// 
-  turnDegrees(30);// turn 30 degree on the left
-  delay(1000); // wait for 1 s
-  turnDegrees(-30);// turn to the initial position 
-  delay(1000);// wait for 1 s
+  delay(1000);// wait for 0.5s
+  stopRobot();
+
+
+
+  unsigned long start= millis()
+  turnDegrees(90);// turn 90 degree on the right
+  unsigned long t = millis() - start
+  Serial.print(t)
+  Serial.println("ms")
+
+
+  // turnDegrees(-90);// turn to the initial position 
+  // stopRobot();
 }
