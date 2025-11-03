@@ -5,7 +5,7 @@
 #define MR_Ctrl 2    // (EN) Right Motor Direction (Digital Pin)
 
 
-#define TURN_90_DELAY 600 // to turn 90 degree i suppose it takes 600ms
+#define TURN_90_DELAY 2750 // to turn 90 degree i suppose it takes 600ms
 
 int currentSpeed = 0;
 
@@ -16,6 +16,7 @@ void setup() {
   pinMode(ML_Ctrl, OUTPUT);
   pinMode(MR_PWM, OUTPUT);
   pinMode(MR_Ctrl, OUTPUT);
+  
   Serial.begin(9600); // Start to communicate with 9600m/s
 
 
@@ -53,8 +54,8 @@ void turnLeft() {
 
   digitalWrite(ML_Ctrl, LOW);
   digitalWrite(MR_Ctrl, HIGH);
-  analogWrite(ML_PWM, currentSpeed);
-  analogWrite(MR_PWM, currentSpeed);
+  analogWrite(ML_PWM, 200);
+  analogWrite(MR_PWM, 55);
 }
 
 
@@ -62,8 +63,8 @@ void turnRight() {
   // we do inversely
   digitalWrite(ML_Ctrl, HIGH);
   digitalWrite(MR_Ctrl, LOW);
-  analogWrite(ML_PWM, currentSpeed);
-  analogWrite(MR_PWM, currentSpeed);
+  analogWrite(ML_PWM, 55);
+  analogWrite(MR_PWM, 200);
 }
 
 
@@ -115,6 +116,17 @@ void loop()
   turnRight();// turn right 
   delay(1000);// wait for 0.5s
   stopRobot();
+
+
+  turnLeft();
+  delay(500);
+  moveForward();
+  delay(1000);
+
+  turnRight();
+  delay(500);
+  moveBackward();
+  delay(1000);
 
 
 
