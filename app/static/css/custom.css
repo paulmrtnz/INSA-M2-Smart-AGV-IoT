@@ -1,0 +1,177 @@
+/* SUIVI DE PARCOURS */
+/* 
+.parcours-sectors-wrapper {
+  display: flex;
+  flex-direction: row;
+}
+.parcours-sector {
+  font-size: 18px;
+  border-width: 2px;
+  border-style: dashed;
+  padding: 6px 12px;
+  flex-grow: 1;
+  text-align: center;
+  font-weight: 600;
+}
+.parcours-sector.done {
+  border-color: #34d399;
+  background-color: #34d399;
+  border-style: solid;
+}
+.parcours-sector.in-progress {
+  border-color: #3b82f6;
+}
+.parcours-sector.error {
+  border-color: #ef4444;
+  background-color: #ef4444;
+  border-style: solid;
+}
+.parcours-sector.pending {
+  border-color: #9ca3af;
+} */
+
+/* Conteneur global */
+.progress-track {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  margin-top: 30px;
+}
+
+/* Chaque étape */
+.step-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  z-index: 1; /* Pour être au-dessus de la ligne */
+}
+
+/* La ligne de connexion (grise par défaut) */
+.step-item:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 15px; /* Centre verticalement par rapport au rond de 30px */
+  left: 50%;
+  width: 100%;
+  height: 3px;
+  background-color: #e0e0e0;
+  z-index: -1; /* Derrière le rond */
+  transition: background-color 0.4s ease;
+}
+
+.step-label {
+  font-weight: 600;
+}
+
+/* Le rond (Icone) */
+.step-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: #fff;
+  border: 2px solid #e0e0e0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  color: #999;
+  transition: all 0.3s ease;
+}
+
+/* --- ÉTATS DYNAMIQUES --- */
+
+/* État : Complété (Passé) */
+.step-item.completed .step-icon {
+  background-color: #27ae60; /* Vert */
+  border-color: #27ae60;
+  color: white;
+}
+/* La ligne vers le suivant devient verte */
+.step-item.completed::after {
+  background-color: #27ae60;
+}
+.step-item.completed .step-label {
+  color: #27ae60;
+}
+
+/* État : Actif (En cours) */
+.step-item.active .step-icon {
+  border-color: #3498db; /* Bleu */
+  color: #3498db;
+  box-shadow: 0 0 10px rgba(52, 152, 219, 0.4);
+}
+.step-item.active .step-label {
+  color: #3498db;
+}
+
+/* Indicateurs de fonctionnement */
+.indi-wrapper {
+  display: flex;
+  gap: 16px;
+}
+
+.indi-item {
+  display: block;
+  padding: 4px;
+  aspect-ratio: square;
+}
+.indi-item svg {
+  height: 32px;
+  width: 32px;
+  stroke-width: 1.5px;
+  stroke: gray;
+}
+.indi-item.active svg {
+  stroke: #3498db;
+}
+.indi-item.warning svg {
+  stroke: orange;
+}
+.indi-item.critical svg {
+  stroke: red;
+}
+/* MÉTRIQUES AGV */
+.metrique-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+.metrique-label {
+    font-weight: 600;
+    color: black;
+}
+.metrique-value {
+    font-weight: 400;
+    color: #374151;
+}
+
+/* Batterie */
+.battery-level {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+.battery-level #battery-num {
+    font-size: 18px;
+    font-weight: 600;
+    color: black;
+}
+
+/* Bouton mode manuel */
+.btn-manuel {
+    background-color: #ef4444;
+    color: white;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+.btn-manuel:hover {
+    background-color: #dc2626;
+}
