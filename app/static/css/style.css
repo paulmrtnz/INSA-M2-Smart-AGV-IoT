@@ -1,0 +1,38 @@
+/* Styles personnalisés pour le dashboard IoT Robot */
+
+/* Animations */
+@keyframes pulse-slow {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.pulse-slow {
+    animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Boutons avec effet de pression */
+button:active {
+    transform: scale(0.95);
+}
+
+/* Scrollbar personnalisée pour la console */
+#console::-webkit-scrollbar {
+    width: 8px;
+}
+
+#console::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+#console::-webkit-scrollbar-thumb {
+    background: #4ade80;
+    border-radius: 4px;
+}
+
+#console::-webkit-scrollbar-thumb:hover {
+    background: #22c55e;
+}

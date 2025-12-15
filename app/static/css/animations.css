@@ -1,0 +1,36 @@
+@keyframes progress-movement {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes blink-progress {
+  0%,
+  100% {
+    background-color: rgba(59, 130, 246, 0.3);
+  }
+  50% {
+    background-color: rgba(96, 165, 250, 0.7);
+  }
+}
+
+@keyframes blink-error {
+  0%,
+  100% {
+    background-color: rgb(255, 65, 65);
+  }
+  50% {
+    background-color: rgb(255, 169, 169);
+  }
+}
+
+.parcours-sector.error {
+  animation: blink-error 1s infinite step-start;
+}
+
+.parcours-sector.in-progress {
+    animation: blink-progress 2s infinite;
+}

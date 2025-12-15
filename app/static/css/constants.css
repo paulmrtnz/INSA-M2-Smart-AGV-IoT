@@ -1,0 +1,38 @@
+:root {
+    --palette-color-1: #fffafb;
+    --palette-color-2: #7de2d1;
+    --palette-color-3: #339989;
+    --palette-color-4: #2b2c28;
+    --palette-color-5: #131515;
+
+    --primary-color: var(--palette-color-3);
+    --secondary-color: var(--palette-color-2);
+
+    --background-color: var(--palette-color-1);
+
+    --text-primary: var(--palette-color-5);
+    --text-secondary: var(--palette-color-4);
+}
+
+@media screen and (min-width: 768px) {
+    :root {
+        --font-size-base: 18px;
+        --font-size-lg: 20px;
+        --font-size-sm: 16px;
+        --font-size-display: 5rem;
+
+        --banner-height: 40vh;
+    }
+}
+
+/* Mobile size */
+@media screen and (max-width: 767px) {
+    :root {
+        --font-size-base: 16px;
+        --font-size-lg: 18px;
+        --font-size-sm: 14px;
+        --font-size-display: 2rem;
+
+        --banner-height: 40vh;
+    }
+}

@@ -1,28 +1,14 @@
-#include "bluetooth.h"
-#include "matrix.h"
+#include "Robot.h"
 
-unsigned char BLEBuffer[16];
-BLECommand BLECommandType;
+// Create the single, global instance of our Robot
+Robot robot;
 
 void setup() {
-  setup_BLE();
-  setup_led_matrix();
+  // Initialize the robot and all its components
+  robot.setup();
 }
 
 void loop() {
-  // Lire les données Bluetooth
-  if (BLE_read()) {
-    switch (BLECommandType)
-    {
-    case BLE_TYPE_MATRIX:
-      // Traiter la trame de type matrice
-      matrix_display(BLEBuffer);
-      break;
-    case BLE_TYPE_CONSOLE:
-      Serial.write(BLEBuffer, 16); // Affiche la réponse dans le moniteur série
-      break;
-    default:
-      break;
-    }
-  }
+  // Run the robot's main loop
+  robot.loop();
 }

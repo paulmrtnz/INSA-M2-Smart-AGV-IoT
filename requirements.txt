@@ -1,0 +1,20 @@
+# Framework Web - FastAPI (async natif)
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+
+# Bluetooth Low Energy
+bleak==0.21.1
+
+# Templates HTML
+jinja2==3.1.2
+
+# Base de données
+sqlalchemy==2.0.23
+
+# Utilitaires
+python-dotenv==1.0.0
+
+# Développement (optionnel)
+pytest==7.4.3
+pytest-asyncio==0.21.1
+httpx==0.25.1  # Pour tester FastAPI

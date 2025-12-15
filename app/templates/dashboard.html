@@ -1,0 +1,1152 @@
+<!-- app/templates/dashboard.html -->
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🤖 Dashboard IoT Robot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="../static/css/custom.css" />
+    <link rel="stylesheet" href="../static/css/components.css" />
+    <link rel="stylesheet" href="../static/css/animations.css" />
+    <style>
+      .status-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+      }
+      .connected {
+        background-color: #10b981;
+      }
+      .disconnected {
+        background-color: #ef4444;
+      }
+      /* Styles pour les tableaux */
+      .table-container {
+        max-height: 600px;
+        overflow-y: auto;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th {
+        background-color: #f3f4f6;
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 2px solid #d1d5db;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      td {
+        padding: 12px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      tr:hover {
+        background-color: #f9fafb;
+      }
+      .sortable {
+        cursor: pointer;
+        user-select: none;
+      }
+      .sortable:hover {
+        background-color: #e5e7eb;
+      }
+      .sort-icon {
+        margin-left: 5px;
+        font-size: 0.75rem;
+      }
+      .pagination {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        align-items: center;
+        margin-top: 1rem;
+        flex-wrap: wrap;
+      }
+      .pagination button, .pagination span {
+        padding: 8px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        background-color: #fff;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .pagination button:hover:not(:disabled) {
+        background-color: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+      }
+      .pagination button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .pagination .active {
+        background-color: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+      }
+      .loading {
+        text-align: center;
+        padding: 2rem;
+        color: #6b7280;
+      }
+      .filter-bar {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+      }
+      .filter-bar input, .filter-bar select {
+        padding: 8px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+      }
+      .export-btn {
+        background-color: #10b981;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 0.375rem;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .export-btn:hover {
+        background-color: #059669;
+      }
+      .badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+      .badge-success {
+        background-color: #d1fae5;
+        color: #065f46;
+      }
+      .badge-warning {
+        background-color: #fef3c7;
+        color: #92400e;
+      }
+      .badge-danger {
+        background-color: #fee2e2;
+        color: #991b1b;
+      }
+      .tab-btn {
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s;
+      }
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+      }
+    </style>
+  </head>
+  <body class="h-screen bg-slate-50 flex flex-col">
+    <main class="w-full h-full flex flex-row flex-grow">
+      <section id="sec-main" class="p-4 flex-grow max-h-full overflow-y-auto">
+        <!-- Section Connexion -->
+        <div class="p-4 mb-3 rounded-xl sticky top-0 bg-slate-300/50 backdrop-blur-lg border border-gray-400/20 border-lg shadow-lg z-10">
+          <!-- <h2 class="text-2xl font-semibold mb-4 text-gray-800">
+                <i class="fas fa-bluetooth text-blue-600"></i>
+                Connexion Bluetooth
+            </h2> -->
+          <div class="flex gap-4 items-center">
+            <h1 class="text-3xl font-bold text-gray-800">IoT Dashboard</h1>
+            <button
+              id="connectBtn"
+              class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition"
+            >
+              <i class="fas fa-link"></i> Connecter
+            </button>
+            <button
+              id="disconnectBtn"
+              class="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-medium transition"
+              disabled
+            >
+              <i class="fas fa-unlink"></i> Déconnecter
+            </button>
+            <div id="statusIndicator" class="flex items-center">
+              <span class="status-dot disconnected"></span>
+              <span class="text-sm font-medium">Déconnecté</span>
+            </div>
+          </div>
+        </div>
+        <div class="grid-wrapper">
+          <!-- <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800">
+              <i class="fas fa-message text-green-600"></i>
+              Messages
+            </h2>
+          </div> -->
+
+          <!-- <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800">
+              <i class="fas fa-grid text-yellow-600"></i>
+              Matrice LED
+            </h2>
+            <div class="grid grid-cols-3 gap-2">
+              <button
+                onclick="window.sendImage('heart'); return false;"
+                class="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg text-sm"
+              >
+                <i class="fas fa-heart"></i> Coeur
+              </button>
+              <button
+                onclick="window.sendImage('smile'); return false;"
+                class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm"
+              >
+                <i class="fas fa-smile"></i> Smile
+              </button>
+              <button
+                onclick="window.sendImage('sad'); return false;"
+                class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm"
+              >
+                <i class="fas fa-frown"></i> Triste
+              </button>
+              <button
+                onclick="window.sendImage('ok'); return false;"
+                class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm"
+              >
+                <i class="fas fa-check"></i> OK
+              </button>
+              <button
+                onclick="window.sendImage('warning'); return false;"
+                class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm"
+              >
+                <i class="fas fa-exclamation"></i> Alerte
+              </button>
+              <button
+                onclick="window.sendImageGlobal('cross'); return false;"
+                class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm"
+              >
+                <i class="fas fa-times"></i> Croix
+              </button>
+            </div>
+          </div>
+          -->
+
+          <div class="grid-item" style="grid-column: span 3 / span 3">
+            <h2 class="grid-item-title">Suivi de parcours</h2>
+
+            <div class="progress-track">
+              <div class="step-item active" id="step-1">
+                <div class="step-icon">1</div>
+                <div class="step-label">Parking AGV</div>
+              </div>
+
+              <div class="step-item" id="step-2">
+                <div class="step-icon">2</div>
+                <div class="step-label">Stockage pièces brutes</div>
+              </div>
+
+              <div class="step-item" id="step-3">
+                <div class="step-icon">3</div>
+                <div class="step-label">Machine</div>
+              </div>
+
+              <div class="step-item" id="step-4">
+                <div class="step-icon">4</div>
+                <div class="step-label">Retour parking AGV</div>
+              </div>
+            </div>
+
+            <!-- <div class="parcours-sectors-wrapper">
+              <div class="parcours-sector done">
+                <span>Secteur 1</span>
+                <p>Parking AGV</p>
+              </div>
+              <div class="parcours-sector done">
+                <span>Secteur 2</span>
+                <p>Stockage pièces brutes</p>
+              </div>
+              <div class="parcours-sector in-progress">
+                <span>Secteur 3</span>
+                <p>Machine 1</p>
+              </div>
+              <div class="parcours-sector pending">
+                <span>Secteur 4</span>
+                <p>Machine 2</p>
+              </div>
+            </div> -->
+          </div>
+
+          <div class="grid-item">
+            <h2 class="grid-item-title">Indicateurs de fonctionnement</h2>
+            <div class="indi-wrapper">
+              <span class="indi-item active" id="indi-auto"
+                ><svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="lucide lucide-circle-play-icon lucide-circle-play"
+                >
+                  <path
+                    d="M9 9.003a1 1 0 0 1 1.517-.859l4.997 2.997a1 1 0 0 1 0 1.718l-4.997 2.997A1 1 0 0 1 9 14.996z"
+                  />
+                  <circle cx="12" cy="12" r="10" /></svg
+              ></span>
+              <span class="indi-item" id="indi-manu">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="lucide lucide-gamepad-directional-icon lucide-gamepad-directional"
+                >
+                  <path
+                    d="M11.146 15.854a1.207 1.207 0 0 1 1.708 0l1.56 1.56A2 2 0 0 1 15 18.828V21a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-2.172a2 2 0 0 1 .586-1.414z"
+                  />
+                  <path
+                    d="M18.828 15a2 2 0 0 1-1.414-.586l-1.56-1.56a1.207 1.207 0 0 1 0-1.708l1.56-1.56A2 2 0 0 1 18.828 9H21a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1z"
+                  />
+                  <path
+                    d="M6.586 14.414A2 2 0 0 1 5.172 15H3a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h2.172a2 2 0 0 1 1.414.586l1.56 1.56a1.207 1.207 0 0 1 0 1.708z"
+                  />
+                  <path
+                    d="M9 3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2.172a2 2 0 0 1-.586 1.414l-1.56 1.56a1.207 1.207 0 0 1-1.708 0l-1.56-1.56A2 2 0 0 1 9 5.172z"
+                  />
+                </svg>
+              </span>
+              <span class="indi-item active" id="indi-lights">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="lucide lucide-flashlight-icon lucide-flashlight"
+                >
+                  <path
+                    d="M18 6c0 2-2 2-2 4v10a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V10c0-2-2-2-2-4V2h12z"
+                  />
+                  <line x1="6" x2="18" y1="6" y2="6" />
+                  <line x1="12" x2="12" y1="12" y2="12" />
+                </svg>
+              </span>
+              <span class="indi-item critical" id="indi-obstacle">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="lucide lucide-box-icon lucide-box"
+                >
+                  <path
+                    d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"
+                  />
+                  <path d="m3.3 7 8.7 5 8.7-5" />
+                  <path d="M12 22V12" />
+                </svg>
+              </span>
+            </div>
+          </div>
+
+          <div class="grid-item" style="grid-column: span 2 / span 2">
+            <h2 class="grid-item-title">Métriques AGV</h2>
+            <div class="metrique-item">
+              <span class="metrique-label">Temps de fonctionnement (session)</span>
+              <span class="metrique-value" id="metrique-time-session">0 s</span>
+            </div>
+            <div class="metrique-item">
+              <span class="metrique-label">Vitesse</span>
+              <span class="metrique-value" id="metrique-speed">0 %</span>
+            </div>
+            <div class="metrique-item">
+              <span class="metrique-label">Distance parcourue (session)</span>
+              <span class="metrique-value" id="metrique-distance-session">0 m</span>
+            </div>
+            <div class="metrique-item">
+              <span class="metrique-label">Photorésistance</span>
+              <span class="metrique-value" id="metrique-light-intensity">0</span>
+            </div>
+            <hr />
+            <div class="metrique-item">
+              <span class="metrique-label">Temps de fonctionnement (total)</span>
+              <span class="metrique-value" id="metrique-time">0 s</span>
+            </div>
+            <div class="metrique-item">
+              <span class="metrique-label">Distance totale</span>
+              <span class="metrique-value" id="metrique-distance">0 m</span>
+            </div>
+            <div class="metrique-item">
+              <span class="metrique-label">Obstacles détectés</span>
+              <span class="metrique-value" id="metrique-obstacles">0</span>
+            </div>
+          </div>
+
+          <div class="grid-item" style="grid-column: span 3 / span 3">
+            <h2 class="grid-item-title">Historique - Vitesse & Distance</h2>
+            <div class="mb-4 flex gap-2">
+              <select id="timeRangeMetrics" class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm">
+                <option value="1h">Dernière heure</option>
+                <option value="6h">Dernières 6h</option>
+                <option value="24h">Dernier jour</option>
+                <option value="7d">Dernière semaine</option>
+              </select>
+              <button id="refreshMetricsBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
+                <i class="fas fa-sync"></i> Rafraîchir
+              </button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div style="height: 300px;"><canvas id="chartSpeed"></canvas></div>
+              <div style="height: 300px;"><canvas id="chartDistance"></canvas></div>
+            </div>
+          </div>
+
+          <div class="grid-item" style="grid-column: span 3 / span 3">
+            <h2 class="grid-item-title">Historique - Événements</h2>
+            <div class="mb-4 flex gap-2">
+              <select id="timeRangeEvents" class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm">
+                <option value="1h">Dernière heure</option>
+                <option value="6h">Dernières 6h</option>
+                <option value="24h">Dernier jour</option>
+                <option value="7d">Dernière semaine</option>
+              </select>
+              <button id="refreshEventsBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
+                <i class="fas fa-sync"></i> Rafraîchir
+              </button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div style="height: 300px;"><canvas id="chartEvents"></canvas></div>
+              <div style="height: 300px;"><canvas id="chartObstacles"></canvas></div>
+            </div>
+          </div>
+
+          <div class="grid-item" style="grid-column: span 3 / span 3">
+            <h2 class="grid-item-title">Historique - Métriques détaillées</h2>
+            <div class="mb-4 flex gap-2">
+              <select id="timeRangeDetailed" class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm">
+                <option value="1h">Dernière heure</option>
+                <option value="6h">Dernières 6h</option>
+                <option value="24h">Dernier jour</option>
+                <option value="7d">Dernière semaine</option>
+              </select>
+              <button id="refreshDetailedBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
+                <i class="fas fa-sync"></i> Rafraîchir
+              </button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div style="height: 250px;"><canvas id="chartStops"></canvas></div>
+              <div style="height: 250px;"><canvas id="chartLightIntensity"></canvas></div>
+              <div style="height: 250px;"><canvas id="chartSpeedHistogram"></canvas></div>
+              <div style="height: 250px;"><canvas id="chartDistanceHistogram"></canvas></div>
+              <div style="grid-column: span 2; height: 300px;"><canvas id="chartEventTypes"></canvas></div>
+            </div>
+          </div>
+
+          <!-- <div class="grid-item">
+              <img
+                id="battery-image"
+                src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWJhdHRlcnktbG93LWljb24gbHVjaWRlLWJhdHRlcnktbG93Ij48cGF0aCBkPSJNMjIgMTR2LTQiLz48cGF0aCBkPSJNNiAxNHYtNCIvPjxyZWN0IHg9IjIiIHk9IjYiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxMiIgcng9IjIiLz48L3N2Zz4="
+                height="64px"
+              />
+              <p id="battery-num">xx%</p>
+            </span>
+          </div> -->
+
+          <!-- <div class="grid-item">
+            <h2 class="grid-item-title">Mode manuel</h2>
+            <div class="flex flex-col gap-8">
+              <button id="btn-manuel" class="btn-manuel">
+                Arrêter le mode auto
+              </button>
+            </div>
+          </div> -->
+
+          <!-- Section Tableaux de données détaillées -->
+          <div class="grid-item" style="grid-column: span 3 / span 3">
+            <h2 class="grid-item-title">Données Détaillées</h2>
+            
+            <!-- Onglets -->
+            <div class="flex gap-2 mb-6 border-b border-gray-300">
+              <button onclick="switchDataTab('telemetry')" id="tab-telemetry" class="tab-btn px-6 py-3 font-semibold border-b-2 border-blue-500 text-blue-600 transition">
+                <i class="fas fa-tachometer-alt"></i> Télémétrie
+              </button>
+              <button onclick="switchDataTab('events')" id="tab-events" class="tab-btn px-6 py-3 font-semibold border-b-2 border-transparent text-gray-600 hover:text-gray-800 transition">
+                <i class="fas fa-bell"></i> Événements
+              </button>
+              <button onclick="switchDataTab('connections')" id="tab-connections" class="tab-btn px-6 py-3 font-semibold border-b-2 border-transparent text-gray-600 hover:text-gray-800 transition">
+                <i class="fas fa-link"></i> Connexions
+              </button>
+            </div>
+
+            <!-- Onglet Télémétrie -->
+            <div id="telemetry-tab" class="tab-content active">
+              <div class="filter-bar">
+                <input type="text" id="telemetry-search" placeholder="Rechercher..." />
+                <select id="telemetry-limit">
+                  <option value="50">50 derniers</option>
+                  <option value="100">100 derniers</option>
+                  <option value="500">500 derniers</option>
+                </select>
+                <button class="export-btn" onclick="exportTableToCSV('telemetry')">
+                  <i class="fas fa-download"></i> Exporter CSV
+                </button>
+                <button class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm" onclick="loadTelemetryData()">
+                  <i class="fas fa-sync"></i> Rafraîchir
+                </button>
+              </div>
+
+              <div id="telemetry-loading" class="loading" style="display:none;">
+                <i class="fas fa-spinner fa-spin"></i> Chargement des données...
+              </div>
+
+              <div id="telemetry-table-container" class="table-container" style="display:none;">
+                <table id="telemetry-table">
+                  <thead>
+                    <tr>
+                      <th class="sortable" onclick="sortTable('telemetry', 'timestamp')">Timestamp <span class="sort-icon">⇅</span></th>
+                      <th class="sortable" onclick="sortTable('telemetry', 'speed_pwm')">Vitesse (PWM) <span class="sort-icon">⇅</span></th>
+                      <th class="sortable" onclick="sortTable('telemetry', 'battery_level')">Batterie (%) <span class="sort-icon">⇅</span></th>
+                      <th class="sortable" onclick="sortTable('telemetry', 'distance_cm')">Distance (m) <span class="sort-icon">⇅</span></th>
+                      <th class="sortable" onclick="sortTable('telemetry', 'light_level')">Photorésistance <span class="sort-icon">⇅</span></th>
+                      <th class="sortable" onclick="sortTable('telemetry', 'obstacle_events')">Obstacles <span class="sort-icon">⇅</span></th>
+                      <th class="sortable" onclick="sortTable('telemetry', 'mode')">Mode <span class="sort-icon">⇅</span></th>
+                    </tr>
+                  </thead>
+                  <tbody id="telemetry-tbody">
+                  </tbody>
+                </table>
+              </div>
+              <div id="telemetry-pagination" class="pagination"></div>
+            </div>
+
+            <!-- Onglet Événements -->
+            <div id="events-tab" class="tab-content" style="display:none;">
+              <div class="filter-bar">
+                <input type="text" id="events-search" placeholder="Rechercher..." />
+                <select id="events-limit">
+                  <option value="50">50 derniers</option>
+                  <option value="100">100 derniers</option>
+                  <option value="500">500 derniers</option>
+                </select>
+                <button class="export-btn" onclick="exportTableToCSV('events')">
+                  <i class="fas fa-download"></i> Exporter CSV
+                </button>
+                <button class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm" onclick="loadEventsData()">
+                  <i class="fas fa-sync"></i> Rafraîchir
+                </button>
+              </div>
+
+              <div id="events-loading" class="loading" style="display:none;">
+                <i class="fas fa-spinner fa-spin"></i> Chargement des données...
+              </div>
+
+              <div id="events-table-container" class="table-container" style="display:none;">
+                <table id="events-table">
+                  <thead>
+                    <tr>
+                      <th class="sortable" onclick="sortTable('events', 'timestamp')">Timestamp <span class="sort-icon">⇅</span></th>
+                      <th class="sortable" onclick="sortTable('events', 'event_type')">Type <span class="sort-icon">⇅</span></th>
+                      <th class="sortable" onclick="sortTable('events', 'severity')">Sévérité <span class="sort-icon">⇅</span></th>
+                      <th>Description</th>
+                      <th class="sortable" onclick="sortTable('events', 'metadata')">Métadonnées <span class="sort-icon">⇅</span></th>
+                    </tr>
+                  </thead>
+                  <tbody id="events-tbody">
+                  </tbody>
+                </table>
+              </div>
+              <div id="events-pagination" class="pagination"></div>
+            </div>
+
+            <!-- Onglet Connexions -->
+            <div id="connections-tab" class="tab-content" style="display:none;">
+              <div class="filter-bar">
+                <input type="text" id="connections-search" placeholder="Rechercher..." />
+                <select id="connections-limit">
+                  <option value="50">50 derniers</option>
+                  <option value="100">100 derniers</option>
+                  <option value="500">500 derniers</option>
+                </select>
+                <button class="export-btn" onclick="exportTableToCSV('connections')">
+                  <i class="fas fa-download"></i> Exporter CSV
+                </button>
+                <button class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm" onclick="loadConnectionsData()">
+                  <i class="fas fa-sync"></i> Rafraîchir
+                </button>
+              </div>
+
+              <div id="connections-loading" class="loading" style="display:none;">
+                <i class="fas fa-spinner fa-spin"></i> Chargement des données...
+              </div>
+
+              <div id="connections-table-container" class="table-container" style="display:none;">
+                <table id="connections-table">
+                  <thead>
+                    <tr>
+                      <th class="sortable" onclick="sortTable('connections', 'connected_at')">Connexion <span class="sort-icon">⇅</span></th>
+                      <th class="sortable" onclick="sortTable('connections', 'disconnected_at')">Déconnexion <span class="sort-icon">⇅</span></th>
+                      <th>Durée</th>
+                      <th class="sortable" onclick="sortTable('connections', 'status')">Statut <span class="sort-icon">⇅</span></th>
+                      <th>Device</th>
+                    </tr>
+                  </thead>
+                  <tbody id="connections-tbody">
+                  </tbody>
+                </table>
+              </div>
+              <div id="connections-pagination" class="pagination"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section
+        id="sec-console"
+        class="bg-zinc-900 p-3 lg:col-span-2 w-1/4 flex flex-col max-h-full"
+      >
+        <h2 class="font-semibold mb-2 text-white p-1.5">
+          <i class="fas fa-terminal text-green-400"></i>
+          Console
+        </h2>
+        <div
+          id="console"
+          class="bg-zinc-950 text-green-400 p-2 rounded font-mono text-sm h-48 overflow-y-auto flex-grow"
+        >
+          <div>Dashboard initialise</div>
+        </div>
+      </section>
+
+      <!-- <div
+        id="overlay-disconnected"
+        class="bg-gray-200 bg-opacity-75 absolute inset-0 flex flex-col justify-center items-center"
+      >
+        <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+          <h2 class="text-2xl font-semibold mb-4 text-gray-800">
+            Robot Déconnecté
+          </h2>
+          <p class="mb-4 text-gray-600">
+            Veuillez connecter le robot pour accéder aux fonctionnalités.
+          </p>
+          <button
+            id="connectBtnOverlay"
+            class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition"
+          >
+            <i class="fas fa-link"></i> Connecter
+          </button>
+        </div>
+      </div> -->
+    </main>
+
+    <!-- Import du client API -->
+    <script src="/static/js/api-client.js"></script>
+    <script src="/static/js/charts.js"></script>
+
+    <!-- Script pour gérer les tableaux de données -->
+    <script>
+      // État de l'application pour les tableaux
+      let appState = {
+        telemetry: {
+          data: [],
+          filtered: [],
+          page: 1,
+          itemsPerPage: 10,
+          sortBy: 'timestamp',
+          sortAsc: false,
+          searchTerm: ''
+        },
+        events: {
+          data: [],
+          filtered: [],
+          page: 1,
+          itemsPerPage: 10,
+          sortBy: 'timestamp',
+          sortAsc: false,
+          searchTerm: ''
+        },
+        connections: {
+          data: [],
+          filtered: [],
+          page: 1,
+          itemsPerPage: 10,
+          sortBy: 'connected_at',
+          sortAsc: false,
+          searchTerm: ''
+        }
+      };
+
+      // Changer d'onglet
+      function switchDataTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.tab-btn').forEach(el => {
+          el.classList.remove('border-blue-500', 'text-blue-600');
+          el.classList.add('border-transparent', 'text-gray-600');
+        });
+
+        document.getElementById(`${tab}-tab`).style.display = 'block';
+        document.getElementById(`tab-${tab}`).classList.add('border-blue-500', 'text-blue-600');
+        document.getElementById(`tab-${tab}`).classList.remove('border-transparent', 'text-gray-600');
+
+        if (appState[tab].data.length === 0) {
+          if (tab === 'telemetry') loadTelemetryData();
+          else if (tab === 'events') loadEventsData();
+          else if (tab === 'connections') loadConnectionsData();
+        }
+      }
+
+      // Charger les données de télémétrie
+      async function loadTelemetryData() {
+        const limit = document.getElementById('telemetry-limit')?.value || 50;
+        document.getElementById('telemetry-loading').style.display = 'block';
+        document.getElementById('telemetry-table-container').style.display = 'none';
+
+        try {
+          const response = await fetch(`/api/telemetry/latest?limit=${limit}`);
+          const data = await response.json();
+          appState.telemetry.data = Array.isArray(data) ? data : data.data || [];
+          appState.telemetry.page = 1;
+          filterAndSortData('telemetry');
+          renderTable('telemetry');
+        } catch (error) {
+          console.error('Erreur:', error);
+        } finally {
+          document.getElementById('telemetry-loading').style.display = 'none';
+        }
+      }
+
+      // Charger les données d'événements
+      async function loadEventsData() {
+        const limit = document.getElementById('events-limit')?.value || 50;
+        document.getElementById('events-loading').style.display = 'block';
+        document.getElementById('events-table-container').style.display = 'none';
+
+        try {
+          const response = await fetch(`/api/events/summary?limit=${limit}`);
+          const data = await response.json();
+          appState.events.data = data.events || [];
+          appState.events.page = 1;
+          filterAndSortData('events');
+          renderTable('events');
+        } catch (error) {
+          console.error('Erreur:', error);
+        } finally {
+          document.getElementById('events-loading').style.display = 'none';
+        }
+      }
+
+      // Charger les données de connexion
+      async function loadConnectionsData() {
+        const limit = document.getElementById('connections-limit')?.value || 50;
+        document.getElementById('connections-loading').style.display = 'block';
+        document.getElementById('connections-table-container').style.display = 'none';
+
+        try {
+          const response = await fetch(`/api/connection/history?limit=${limit}`);
+          const data = await response.json();
+          appState.connections.data = data.connections || data || [];
+          appState.connections.page = 1;
+          filterAndSortData('connections');
+          renderTable('connections');
+        } catch (error) {
+          console.error('Erreur:', error);
+        } finally {
+          document.getElementById('connections-loading').style.display = 'none';
+        }
+      }
+
+      // Filtrer et trier les données
+      function filterAndSortData(tab) {
+        const state = appState[tab];
+        let filtered = state.data;
+
+        if (state.searchTerm) {
+          filtered = filtered.filter(item => {
+            const str = JSON.stringify(item).toLowerCase();
+            return str.includes(state.searchTerm.toLowerCase());
+          });
+        }
+
+        filtered.sort((a, b) => {
+          const aVal = a[state.sortBy];
+          const bVal = b[state.sortBy];
+          if (typeof aVal === 'string') {
+            return state.sortAsc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+          }
+          return state.sortAsc ? aVal - bVal : bVal - aVal;
+        });
+
+        state.filtered = filtered;
+      }
+
+      // Afficher le tableau
+      function renderTable(tab) {
+        const state = appState[tab];
+        const tbody = document.getElementById(`${tab}-tbody`);
+        const start = (state.page - 1) * state.itemsPerPage;
+        const end = start + state.itemsPerPage;
+        const pageData = state.filtered.slice(start, end);
+
+        tbody.innerHTML = '';
+
+        if (pageData.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-500 py-4">Aucune donnée</td></tr>';
+          document.getElementById(`${tab}-table-container`).style.display = 'none';
+          document.getElementById(`${tab}-pagination`).innerHTML = '';
+          return;
+        }
+
+        pageData.forEach(item => {
+          const row = document.createElement('tr');
+          
+          if (tab === 'telemetry') {
+            row.innerHTML = `
+              <td>${new Date(item.timestamp).toLocaleString('fr-FR')}</td>
+              <td>${item.speed_pwm !== undefined ? item.speed_pwm : '-'}</td>
+              <td>${item.battery_level !== undefined ? item.battery_level + '%' : '-'}</td>
+              <td>${item.distance_cm !== undefined ? (item.distance_cm / 100).toFixed(2) : '-'}</td>
+              <td>${item.light_level !== undefined ? item.light_level : '-'}</td>
+              <td>${item.obstacle_events !== undefined ? item.obstacle_events : '-'}</td>
+              <td><span class="badge badge-success">${item.mode || '-'}</span></td>
+            `;
+          } else if (tab === 'events') {
+            const severityClass = item.severity === 'critical' ? 'badge-danger' : item.severity === 'warning' ? 'badge-warning' : 'badge-success';
+            row.innerHTML = `
+              <td>${new Date(item.timestamp).toLocaleString('fr-FR')}</td>
+              <td><strong>${item.event_type}</strong></td>
+              <td><span class="badge ${severityClass}">${item.severity || 'info'}</span></td>
+              <td>${item.description || '-'}</td>
+              <td style="font-size: 0.75rem; color: #666;">${item.metadata ? JSON.stringify(item.metadata) : '-'}</td>
+            `;
+          } else if (tab === 'connections') {
+            const duration = item.disconnected_at ? getDuration(item.connected_at, item.disconnected_at) : 'En cours...';
+            const statusClass = item.status === 'connected' ? 'badge-success' : 'badge-danger';
+            row.innerHTML = `
+              <td>${new Date(item.connected_at).toLocaleString('fr-FR')}</td>
+              <td>${item.disconnected_at ? new Date(item.disconnected_at).toLocaleString('fr-FR') : '-'}</td>
+              <td>${duration}</td>
+              <td><span class="badge ${statusClass}">${item.status}</span></td>
+              <td>${item.device_name || '-'}</td>
+            `;
+          }
+          
+          tbody.appendChild(row);
+        });
+
+        document.getElementById(`${tab}-table-container`).style.display = 'block';
+        renderPagination(tab);
+      }
+
+      // Afficher la pagination
+      function renderPagination(tab) {
+        const state = appState[tab];
+        const totalPages = Math.ceil(state.filtered.length / state.itemsPerPage);
+        const paginationDiv = document.getElementById(`${tab}-pagination`);
+        
+        paginationDiv.innerHTML = '';
+
+        if (totalPages <= 1) return;
+
+        const prevBtn = document.createElement('button');
+        prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i> Précédent';
+        prevBtn.disabled = state.page === 1;
+        prevBtn.onclick = () => {
+          if (state.page > 1) {
+            state.page--;
+            renderTable(tab);
+          }
+        };
+        paginationDiv.appendChild(prevBtn);
+
+        const startPage = Math.max(1, state.page - 2);
+        const endPage = Math.min(totalPages, state.page + 2);
+
+        if (startPage > 1) {
+          const page1 = document.createElement('button');
+          page1.textContent = '1';
+          page1.onclick = () => {
+            state.page = 1;
+            renderTable(tab);
+          };
+          paginationDiv.appendChild(page1);
+
+          if (startPage > 2) {
+            const dots = document.createElement('span');
+            dots.textContent = '...';
+            paginationDiv.appendChild(dots);
+          }
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+          const pageBtn = document.createElement('button');
+          pageBtn.textContent = i;
+          if (i === state.page) pageBtn.classList.add('active');
+          pageBtn.onclick = () => {
+            state.page = i;
+            renderTable(tab);
+          };
+          paginationDiv.appendChild(pageBtn);
+        }
+
+        if (endPage < totalPages) {
+          if (endPage < totalPages - 1) {
+            const dots = document.createElement('span');
+            dots.textContent = '...';
+            paginationDiv.appendChild(dots);
+          }
+
+          const lastBtn = document.createElement('button');
+          lastBtn.textContent = totalPages;
+          lastBtn.onclick = () => {
+            state.page = totalPages;
+            renderTable(tab);
+          };
+          paginationDiv.appendChild(lastBtn);
+        }
+
+        const nextBtn = document.createElement('button');
+        nextBtn.innerHTML = 'Suivant <i class="fas fa-chevron-right"></i>';
+        nextBtn.disabled = state.page === totalPages;
+        nextBtn.onclick = () => {
+          if (state.page < totalPages) {
+            state.page++;
+            renderTable(tab);
+          }
+        };
+        paginationDiv.appendChild(nextBtn);
+
+        const info = document.createElement('span');
+        info.textContent = `Page ${state.page}/${totalPages}`;
+        paginationDiv.appendChild(info);
+      }
+
+      // Trier le tableau
+      function sortTable(tab, column) {
+        const state = appState[tab];
+        if (state.sortBy === column) {
+          state.sortAsc = !state.sortAsc;
+        } else {
+          state.sortBy = column;
+          state.sortAsc = true;
+        }
+        state.page = 1;
+        filterAndSortData(tab);
+        renderTable(tab);
+      }
+
+      // Exporter en CSV
+      function exportTableToCSV(tab) {
+        const state = appState[tab];
+        let csv = [];
+
+        if (state.filtered.length > 0) {
+          const headers = Object.keys(state.filtered[0]);
+          csv.push(headers.join(','));
+
+          state.filtered.forEach(item => {
+            const values = headers.map(header => {
+              const value = item[header];
+              if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+                return `"${value.replace(/"/g, '""')}"`;
+              }
+              return value;
+            });
+            csv.push(values.join(','));
+          });
+        }
+
+        const csvContent = csv.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `${tab}_${new Date().getTime()}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      // Calculer la durée
+      function getDuration(start, end) {
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        const diff = endDate - startDate;
+        
+        const hours = Math.floor(diff / 3600000);
+        const minutes = Math.floor((diff % 3600000) / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+
+        if (hours > 0) return `${hours}h ${minutes}m`;
+        if (minutes > 0) return `${minutes}m ${seconds}s`;
+        return `${seconds}s`;
+      }
+
+      // Écouteurs de recherche
+      document.getElementById('telemetry-search')?.addEventListener('input', (e) => {
+        appState.telemetry.searchTerm = e.target.value;
+        appState.telemetry.page = 1;
+        filterAndSortData('telemetry');
+        renderTable('telemetry');
+      });
+
+      document.getElementById('events-search')?.addEventListener('input', (e) => {
+        appState.events.searchTerm = e.target.value;
+        appState.events.page = 1;
+        filterAndSortData('events');
+        renderTable('events');
+      });
+
+      document.getElementById('connections-search')?.addEventListener('input', (e) => {
+        appState.connections.searchTerm = e.target.value;
+        appState.connections.page = 1;
+        filterAndSortData('connections');
+        renderTable('connections');
+      });
+
+      // Charger les données de télémétrie au démarrage
+      window.addEventListener('load', () => {
+        loadTelemetryData();
+      });
+    </script>
+
+    <!-- Script principal - APRÈS que les scripts soient chargés -->
+    <script>
+      // Initialisation au chargement complet de la page
+      window.addEventListener("load", () => {
+        console.log("=== PAGE LOAD ===");
+        
+        // Appeler la fonction d'initialisation définie dans api-client.js
+        if (window.initDashboard) {
+          window.initDashboard();
+        } else {
+          console.error("❌ initDashboard non disponible!");
+        }
+      });
+
+      // Fonction images - GLOBALE pour onclick
+      window.sendImageGlobal = async function (name) {
+        if (window.sendImage) {
+          await window.sendImage(name);
+        }
+      };
+    </script>
+    <script>
+      // Fonction pour mettre à jour l'affichage
+      function updateProgress(currentStepIndex) {
+        // currentStepIndex : entier de 1 à 4
+
+        for (let i = 1; i <= 4; i++) {
+          const step = document.getElementById(`step-${i}`);
+
+          // Reset des classes
+          step.classList.remove("active", "completed");
+
+          if (i < currentStepIndex) {
+            // Étapes passées -> Completed
+            step.classList.add("completed");
+          } else if (i === currentStepIndex) {
+            // Étape actuelle -> Active
+            step.classList.add("active");
+          }
+          // Les étapes > currentStepIndex restent neutres
+        }
+      }
+
+      // --- SIMULATION (Pour tester sans l'Arduino) ---
+      // Change d'étape toutes les 2 secondes
+      let step = 1;
+      setInterval(() => {
+        updateProgress(step);
+        step++;
+        // Correction du bug: il n'y a que 4 étapes
+        if (step > 4) step = 1; // Reset boucle
+      }, 2000);
+    </script>
+    <!-- <script>
+      const batteryStates = [
+        {
+          status: "empty",
+          src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWJhdHRlcnktbG93LWljb24gbHVjaWRlLWJhdHRlcnktbG93Ij48cGF0aCBkPSJNMjIgMTR2LTQiLz48cGF0aCBkPSJNNiAxNHYtNCIvPjxyZWN0IHg9IjIiIHk9IjYiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxMiIgcng9IjIiLz48L3N2Zz4="
+                },
+        {
+          status: "low",
+          src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWJhdHRlcnktbG93LWljb24gbHVjaWRlLWJhdHRlcnktbG93Ij48cGF0aCBkPSJNMjIgMTR2LTQiLz48cGF0aCBkPSJNNiAxNHYtNCIvPjxyZWN0IHg9IjIiIHk9IjYiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxMiIgcng9IjIiLz48L3N2Zz4=",
+        },
+        {
+          status: "medium",
+          src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWJhdHRlcnktbWVkaXVtLWljb24gbHVjaWRlLWJhdHRlcnktbWVkaXVtIj48cGF0aCBkPSJNMTAgMTR2LTQiLz48cGF0aCBkPSJNMjIgMTR2LTQiLz48cGF0aCBkPSJNNiAxNHYtNCIvPjxyZWN0IHg9IjIiIHk9IjYiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxMiIgcng9IjIiLz48L3N2Zz4=",
+        },
+        {
+          status: "full",
+          src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWJhdHRlcnktZnVsbC1pY29uIGx1Y2lkZS1iYXR0ZXJ5LWZ1bGwiPjxwYXRoIGQ9Ik0xMCAxMHY0Ii8+PHBhdGggZD0iTTE0IDEwdjQiLz48cGF0aCBkPSJNMjIgMTR2LTQiLz48cGF0aCBkPSJNNiAxMHY0Ii8+PHJlY3QgeD0iMiIgeT0iNiIgd2lkdGg9IjE2IiBoZWlnaHQ9IjEyIiByeD0iMiIvPjwvc3ZnPg==",
+        },
+        {
+          status: "charging",
+          src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWJhdHRlcnktY2hhcmdpbmctaWNvbiBsdWNpZGUtYmF0dGVyeS1jaGFyZ2luZyI+PHBhdGggZD0ibTExIDctMyA1aDRsLTMgNSIvPjxwYXRoIGQ9Ik0xNC44NTYgNkgxNmEyIDIgMCAwIDEgMiAydjhhMiAyIDAgMCAxLTIgMmgtMi45MzUiLz48cGF0aCBkPSJNMjIgMTR2LTQiLz48cGF0aCBkPSJNNS4xNCAxOEg0YTIgMiAwIDAgMS0yLTJWOGEyIDIgMCAwIDEgMi0yaDIuOTM2Ii8+PC9zdmc+",
+        },
+      ];
+      const batteryImg = document.getElementById("battery-image");
+      const batteryText = document.getElementById("battery-num");
+      function updateBattery(status) {
+        newSrc = batteryStates.find((b) => b.status === status).src;
+        batteryImg.alt = `Battery ${status}`;
+        batteryImg.src = newSrc;
+        if (status === "empty") {
+          batteryText.style.color = "red";
+        } else {
+          batteryText.style.color = "black";
+        }
+      }
+      function updateBatteryText(percentage) {
+        batteryText.textContent = `${percentage}%`;
+      }
+
+      function fetchBattery(battery, charging = false) {
+        if (battery >= 75) {
+          updateBattery("full");
+        } else if (battery >= 50) {
+          updateBattery("medium");
+        } else if (battery >= 25) {
+          updateBattery("low");
+        } else {
+          updateBattery("empty");
+        }
+        updateBatteryText(battery);
+      }
+
+      // boucle de simulation
+      let batteryLevel = 100;
+      let charging = 0;
+      setInterval(() => {
+        fetchBattery(batteryLevel);
+        batteryLevel -= 1;
+        if (!charging && batteryLevel == 0) {
+          charging = true;
+        }
+        if (charging) {
+          fetchBattery(batteryLevel, true);
+          updateBattery("charging");
+          batteryLevel += 2;
+          if (batteryLevel >= 100) {
+            batteryLevel = 100;
+            charging = false;
+          }
+        }
+      }, 100);
+    </script>
+  </body>
+</html>
