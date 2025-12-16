@@ -379,7 +379,7 @@ Une fois lancé, l'application est accessible sur :
 ### Vue d'Ensemble
 
 ```
-5A_ACAD_IoT/
+/
 │
 ├── config.py                 # Configuration (dev, prod, test)
 ├── requirements.txt          # Dépendances Python
@@ -437,10 +437,6 @@ Une fois lancé, l'application est accessible sur :
 │   └── templates/            # Templates HTML (Jinja2)
 │       ├── index.html        # Page d'accueil
 │       ├── dashboard.html    # Tableau de bord principal
-│       ├── diagnostic.html   # Page de diagnostic
-│       ├── history.html      # Historique des données
-│       ├── debug.html        # Console de débogage
-│       └── test.html         # Tests fonctionnels
 │
 └── robot/                    # Code Arduino (référence)
     └── arduino_sketch/
