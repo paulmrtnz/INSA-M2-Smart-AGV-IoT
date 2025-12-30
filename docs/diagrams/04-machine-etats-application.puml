@@ -1,0 +1,189 @@
+@startuml Machine_Etats_Application
+skinparam backgroundColor white
+skinparam shadowing false
+
+title Machine à États de l'Application Web FastAPI\nProjet INSA CVL - Smart AGV IoT
+
+[*] --> INIT : Démarrage serveur Uvicorn
+
+state INIT {
+    state "Initialisation Application" as init_app
+    init_app : - Création instance FastAPI
+    init_app : - Configuration CORS
+    init_app : - Montage fichiers statiques
+    init_app : - Initialisation BDD SQLite
+    init_app : - Enregistrement routers
+    init_app : - Config WebSocket Manager
+    
+    [*] --> init_app
+    init_app --> [*] : Configuration terminée
+}
+
+INIT --> READY : Serveur prêt sur port 8000
+
+state READY {
+    state "Application Prête" as ready_state
+    ready_state : - Serveur HTTP actif
+    ready_state : - API REST disponible
+    ready_ready_state : - BLE Manager initialisé (non connecté)
+    ready_state : - BDD accessible
+    ready_state : - WebSocket en écoute
+    
+    [*] --> ready_state
+}
+
+READY --> CONNECTING_BLE : Requête connexion BLE\nPOST /api/bluetooth/connect
+
+state CONNECTING_BLE {
+    state "Tentative connexion Bluetooth" as connecting
+    connecting : - Création BleakClient
+    connecting : - Connexion à l'adresse MAC
+    connecting : - Timeout: 10 secondes
+    connecting : - Lock asyncio actif
+    
+    [*] --> connecting
+    
+    state "Vérification périphérique" as check_device
+    check_device : - Scan périphérique
+    check_device : - Validation UUID
+    check_device : - Établissement lien
+}
+
+CONNECTING_BLE --> CONNECTED : Connexion réussie\n+ Start notifications
+CONNECTING_BLE --> READY : Échec connexion\n(erreur retournée)
+
+state CONNECTED {
+    state "BLE Connecté et Opérationnel" as connected_state
+    connected_state : - Client BLE actif
+    connected_state : - Notifications actives (UUID 0xFFE1)
+    connected_state : - Canal écriture prêt (UUID 0xFFE2)
+    connected_state : - WebSocket diffuse statut
+    connected_state : - Prêt à envoyer/recevoir
+    
+    [*] --> connected_state
+    
+    state "Gestion Messages" as msg_handling {
+        state RECEIVING_TELEMETRY
+        state SENDING_COMMAND
+        
+        RECEIVING_TELEMETRY : - Callback BLE notification
+        RECEIVING_TELEMETRY : - Parsing JSON télémétrie
+        RECEIVING_TELEMETRY : - Validation checksum
+        RECEIVING_TELEMETRY : - Stockage BDD
+        RECEIVING_TELEMETRY : - Broadcast WebSocket
+        
+        SENDING_COMMAND : - Validation commande
+        SENDING_COMMAND : - Conversion bytes
+        SENDING_COMMAND : - Envoi UUID Write
+        SENDING_COMMAND : - Log événement
+    }
+    
+    connected_state --> msg_handling : Messages BLE
+    msg_handling --> connected_state
+}
+
+CONNECTED --> DISCONNECTING : Requête déconnexion\nPOST /api/bluetooth/disconnect
+
+state DISCONNECTING {
+    state "Fermeture connexion" as disconnecting
+    disconnecting : - Arrêt notifications
+    disconnecting : - Fermeture BleakClient
+    disconnecting : - Nettoyage ressources
+    disconnecting : - Broadcast WebSocket
+    
+    [*] --> disconnecting
+}
+
+DISCONNECTING --> READY : Déconnexion complète
+
+CONNECTED --> READY : Perte connexion\n(timeout, erreur BLE)
+
+state "Tâches Asynchrones Parallèles" as async_tasks {
+    state "HTTP Request Handling" as http {
+        state "Traitement Requêtes" as req_handling
+        req_handling : GET /dashboard
+        req_handling : GET /api/telemetry/latest
+        req_handling : POST /api/bluetooth/send
+        req_handling : GET /api/statistics
+        req_handling : DELETE /api/maintenance/cleanup
+        
+        note right of req_handling
+            25+ endpoints REST
+            Concurrent avec FastAPI
+        end note
+    }
+    
+    state "WebSocket Connections" as ws {
+        state "Gestion Connexions WS" as ws_mgmt
+        ws_mgmt : - Connexions multiples clients
+        ws_mgmt : - Broadcast notifications
+        ws_mgmt : - Keepalive automatique
+        ws_mgmt : - Déconnexion cleanup
+        
+        note right of ws_mgmt
+            Notifications temps réel:
+            - Statut BLE
+            - Télémétrie reçue
+            - Événements robot
+        end note
+    }
+    
+    state "Database Operations" as db {
+        state "Opérations BDD" as db_ops
+        db_ops : - Insert télémétrie
+        db_ops : - Insert événements
+        db_ops : - Calcul statistiques
+        db_ops : - Queries historique
+        db_ops : - Maintenance périodique
+        
+        note right of db_ops
+            SQLite avec SQLAlchemy
+            Transactions ACID
+            Index optimisés
+        end note
+    }
+}
+
+READY --> async_tasks : En parallèle de l'état principal
+CONNECTED --> async_tasks : En parallèle de l'état principal
+
+note top of INIT
+    Démarrage unique
+    au lancement serveur
+end note
+
+note right of READY
+    État par défaut:
+    - Pas de connexion BLE active
+    - Application accessible
+    - Prêt à recevoir requêtes
+end note
+
+note right of CONNECTED
+    État nominal opérationnel:
+    - Communication bidirectionnelle
+    - Télémétrie temps réel
+    - Commandes possibles
+end note
+
+note bottom of async_tasks
+    Ces tâches s'exécutent en parallèle
+    quel que soit l'état de connexion BLE
+    grâce à asyncio et FastAPI
+end note
+
+legend right
+    |= État |= Description |
+    | INIT | Initialisation au démarrage |
+    | READY | Prêt, BLE non connecté |
+    | CONNECTING_BLE | Tentative connexion |
+    | CONNECTED | BLE actif, opérationnel |
+    | DISCONNECTING | Fermeture propre |
+    
+    |= Trigger |= Source |
+    | Requête HTTP | Client navigateur |
+    | Notification BLE | Robot Arduino |
+    | WebSocket | Connexions multiples |
+endlegend
+
+@enduml

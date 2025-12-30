@@ -1,0 +1,239 @@
+@startuml Fonctionnement_Global
+skinparam backgroundColor white
+skinparam sequenceMessageAlign center
+skinparam shadowing false
+
+title Diagramme de Séquence - Fonctionnement Global\nProjet INSA CVL - Smart AGV IoT
+
+actor Utilisateur as user
+participant "Navigateur Web" as browser
+participant "FastAPI\nApplication" as app
+participant "BLE Manager" as ble_mgr
+participant "SQLite\nDatabase" as db
+participant "WebSocket\nManager" as ws_mgr
+participant "Bluetooth\nLow Energy" as ble_proto
+participant "Robot Arduino\n(BT Manager)" as robot_bt
+participant "Robot\nController" as robot_ctrl
+participant "Capteurs/\nActionneurs" as hardware
+
+== Phase 1: Démarrage et Initialisation ==
+
+user -> browser : Accède à\nhttp://localhost:8000
+browser -> app : GET /dashboard
+app -> browser : Retour page HTML
+browser -> ws_mgr : Établit connexion WebSocket
+ws_mgr -> browser : WebSocket connecté
+
+note over robot_ctrl, hardware
+    Robot en état STARTING:
+    - Initialisation hardware
+    - Affichage logo PGP
+    - Démarrage Bluetooth
+end note
+
+robot_ctrl -> robot_bt : Setup Bluetooth (9600 baud)
+robot_ctrl -> hardware : Configuration capteurs/moteurs
+robot_ctrl -> robot_ctrl : Transition vers\nWAITING_BT
+
+note over robot_ctrl
+    État WAITING_BT:
+    - LED Matrix "Waiting BT..."
+    - Moteurs désactivés
+    - Écoute connexion
+end note
+
+== Phase 2: Connexion Bluetooth ==
+
+user -> browser : Clic "Connecter Bluetooth"
+browser -> app : POST /api/bluetooth/connect
+activate app
+app -> ble_mgr : connect()
+activate ble_mgr
+
+ble_mgr -> ble_proto : BleakClient.connect()
+activate ble_proto
+ble_proto -> robot_bt : Connexion BLE établie
+activate robot_bt
+
+robot_bt -> robot_ctrl : Message "CONNECTED"
+robot_ctrl -> robot_ctrl : Transition vers MANUAL
+robot_ctrl -> hardware : LED Matrix "MANUAL"
+
+ble_proto --> ble_mgr : Connexion OK
+deactivate ble_proto
+ble_mgr -> ble_mgr : Start notifications (UUID 0xFFE1)
+ble_mgr --> app : {success: true}
+deactivate ble_mgr
+app --> browser : 200 OK {status: "connected"}
+deactivate app
+
+app -> ws_mgr : Broadcast "BLE Connected"
+ws_mgr -> browser : WebSocket notification
+browser -> browser : Affichage voyant vert
+
+== Phase 3: Envoi Commande (Mode Manuel) ==
+
+user -> browser : Clic "Avancer"
+browser -> app : POST /api/bluetooth/send\n{"action": "forward"}
+activate app
+app -> ble_mgr : send_message("forward")
+activate ble_mgr
+
+ble_mgr -> ble_proto : write_gatt_char(UUID 0xFFE2)
+activate ble_proto
+ble_proto -> robot_bt : Message BLE "forward"
+
+robot_bt -> robot_ctrl : Commande reçue
+robot_ctrl -> hardware : motors.forward()
+hardware -> hardware : Moteurs activés
+
+ble_proto --> ble_mgr : Envoi confirmé
+deactivate ble_proto
+ble_mgr --> app : {success: true}
+deactivate ble_mgr
+app --> browser : 200 OK
+deactivate app
+
+app -> db : INSERT INTO events\n(type: "command_sent")
+db --> app : Event enregistré
+
+== Phase 4: Réception Télémétrie (Automatique toutes les 30s) ==
+
+note over robot_ctrl
+    Timer télémétrie (30s) déclenché
+end note
+
+robot_ctrl -> hardware : Lecture capteurs
+hardware --> robot_ctrl : - Distance: 45cm\n- Ligne: détectée\n- Batterie: 85%
+
+robot_ctrl -> robot_ctrl : Collecte métriques
+robot_ctrl -> robot_bt : Envoyer paquet télémétrie JSON
+
+robot_bt -> ble_proto : Notification BLE (UUID 0xFFE1)
+deactivate robot_bt
+activate ble_proto
+ble_proto -> ble_mgr : Callback notification
+deactivate ble_proto
+activate ble_mgr
+
+ble_mgr -> ble_mgr : Parse JSON\nValidation données
+ble_mgr -> db : INSERT INTO telemetry\n(paquet complet)
+activate db
+db --> ble_mgr : ID généré
+deactivate db
+
+ble_mgr -> ws_mgr : Broadcast télémétrie
+deactivate ble_mgr
+ws_mgr -> browser : WebSocket: nouvelles données
+browser -> browser : Mise à jour dashboard\n(graphiques, stats)
+
+== Phase 5: Passage en Mode Automatique ==
+
+user -> browser : Clic "Mode Auto"
+browser -> app : POST /api/bluetooth/send\n{"action": "auto"}
+app -> ble_mgr : send_message("auto")
+ble_mgr -> ble_proto : write_gatt_char(UUID 0xFFE2)
+ble_proto -> robot_bt : Message "auto"
+
+robot_bt -> robot_ctrl : Commande mode auto
+robot_ctrl -> robot_ctrl : Transition vers AUTO
+robot_ctrl -> hardware : LED Matrix "AUTO"
+
+note over robot_ctrl, hardware
+    État AUTO actif:
+    - Lecture capteurs ligne (100ms)
+    - Vérification obstacles (500ms)
+    - Navigation autonome
+end note
+
+loop Toutes les 100ms (mode AUTO)
+    robot_ctrl -> hardware : Lecture 3x IR ligne
+    hardware --> robot_ctrl : L=0, M=1, R=0
+    robot_ctrl -> robot_ctrl : Calcul direction
+    robot_ctrl -> hardware : Ajuster moteurs
+    
+    alt Distance < 25cm (obstacle détecté)
+        robot_ctrl -> robot_ctrl : Transition vers\nOBSTACLE_DETECTED
+        robot_ctrl -> hardware : motors.stop()
+        robot_ctrl -> hardware : LED "!!!"
+        robot_ctrl -> robot_bt : Événement obstacle
+        robot_bt -> ble_proto : Notification BLE
+        ble_proto -> ble_mgr : Callback notification
+        ble_mgr -> db : INSERT INTO events\n(type: "obstacle_detected")
+        ble_mgr -> ws_mgr : Broadcast alerte
+        ws_mgr -> browser : Alerte obstacle
+        browser -> browser : Notification utilisateur
+        
+        note over robot_ctrl
+            Attente dégagement obstacle
+            Vérification continue distance
+        end note
+        
+        robot_ctrl -> hardware : Mesure distance
+        hardware --> robot_ctrl : Distance > 25cm
+        robot_ctrl -> robot_ctrl : Retour vers AUTO
+    end
+end
+
+== Phase 6: Consultation Historique ==
+
+user -> browser : Accède à /history
+browser -> app : GET /history
+app -> browser : Page HTML historique
+
+browser -> app : GET /api/telemetry/recent?limit=100
+activate app
+app -> db : SELECT * FROM telemetry\nORDER BY timestamp DESC\nLIMIT 100
+activate db
+db --> app : Liste paquets
+deactivate db
+app --> browser : JSON [100 paquets]
+deactivate app
+
+browser -> browser : Affichage tableau\n+ graphiques historiques
+
+== Phase 7: Déconnexion ==
+
+user -> browser : Clic "Déconnecter"
+browser -> app : POST /api/bluetooth/disconnect
+activate app
+app -> ble_mgr : disconnect()
+activate ble_mgr
+
+ble_mgr -> ble_proto : stop_notify()
+ble_proto -> ble_proto : Arrêt notifications
+
+ble_mgr -> ble_proto : BleakClient.disconnect()
+ble_proto -> robot_bt : Déconnexion BLE
+
+robot_bt -> robot_ctrl : Message "DISCONNECTED"
+robot_ctrl -> robot_ctrl : Transition vers\nWAITING_BT
+robot_ctrl -> hardware : motors.stop()
+robot_ctrl -> hardware : LED "Waiting BT..."
+
+ble_proto --> ble_mgr : Déconnecté
+ble_mgr --> app : {success: true}
+deactivate ble_mgr
+app --> browser : 200 OK
+deactivate app
+
+app -> ws_mgr : Broadcast "BLE Disconnected"
+ws_mgr -> browser : WebSocket notification
+browser -> browser : Affichage voyant rouge
+
+app -> db : INSERT INTO connection_log\n(event: "disconnect")
+db --> app : Log enregistré
+
+legend right
+    |= Communication |= Protocole |
+    | Utilisateur ↔ Application | HTTP/HTTPS + WebSocket |
+    | Application ↔ Robot | Bluetooth Low Energy (BLE) |
+    | Application ↔ BDD | SQLAlchemy ORM |
+    
+    |= Intervalle |= Action |
+    | 100ms | Lecture capteurs ligne (AUTO) |
+    | 500ms | Vérification obstacles |
+    | 30s | Envoi télémétrie robot |
+endlegend
+
+@enduml

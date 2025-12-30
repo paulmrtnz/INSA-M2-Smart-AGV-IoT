@@ -1,0 +1,122 @@
+@startuml Architecture_Globale
+skinparam backgroundColor white
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+title Architecture Globale - Plateforme IoT AGV\nProjet INSA CVL - Smart AGV IoT
+
+package "Couche Utilisateur" {
+    [Navigateur Web] as browser
+    note right of browser
+        Interface HTML/CSS/JS
+        Dashboard interactif
+        WebSocket temps réel
+    end note
+}
+
+package "Couche Application - Backend FastAPI" {
+    package "API Layer" {
+        [Routes HTML] as html_routes
+        [API REST] as rest_api
+        [WebSocket Manager] as ws_manager
+    }
+    
+    package "Services Layer" {
+        [BLE Manager] as ble_manager
+        note right of ble_manager
+            Gestion connexion BLE
+            Envoi/Réception messages
+            Parsing télémétrie
+        end note
+    }
+    
+    package "Data Layer" {
+        [Models ORM] as models
+        database "SQLite\nrobot_data.db" as db {
+            [telemetry]
+            [events]
+            [statistics]
+            [connection_log]
+        }
+    }
+}
+
+package "Couche Communication" {
+    [Bluetooth Low Energy] as ble
+    note right of ble
+        Protocole BLE
+        UUID: 0xFFE1/0xFFE2
+        Bidirectionnel
+    end note
+}
+
+package "Couche Robot - Arduino" {
+    package "Orchestration" {
+        [Robot Controller] as robot_controller
+        note left of robot_controller
+            Machine à états
+            Gestion modes
+            Coordination composants
+        end note
+    }
+    
+    package "Capteurs (Entrées)" {
+        [Ultrasonic Sensor] as us_sensor
+        [Line Tracker] as line_tracker
+        [IR Remote] as ir_remote
+        [Photoresistor] as photo_sensor
+    }
+    
+    package "Actionneurs (Sorties)" {
+        [Motor Controller] as motors
+        [LED Matrix] as led_matrix
+    }
+    
+    package "Communication Robot" {
+        [Bluetooth Manager] as bt_manager_robot
+        [Metrics Manager] as metrics_manager
+    }
+}
+
+' Relations Utilisateur -> Application
+browser --> html_routes : "HTTP GET/POST"
+browser <--> ws_manager : "WebSocket\n(notifications temps réel)"
+browser --> rest_api : "HTTP REST API"
+
+' Relations Application interne
+html_routes --> rest_api
+rest_api --> ble_manager
+ws_manager --> ble_manager
+ble_manager --> models
+models --> db
+
+' Relations Application -> Robot
+ble_manager <--> ble : "Connexion BLE\nCommandes/Télémétrie"
+ble <--> bt_manager_robot : "Communication\nBidirectionnelle"
+
+' Relations Robot interne
+bt_manager_robot --> robot_controller : "Messages entrants"
+robot_controller --> bt_manager_robot : "Télémétrie sortante"
+
+robot_controller --> motors : "Commandes moteur"
+robot_controller --> led_matrix : "Affichage"
+
+us_sensor --> robot_controller : "Distance obstacles"
+line_tracker --> robot_controller : "Détection ligne"
+ir_remote --> robot_controller : "Commandes IR"
+photo_sensor --> robot_controller : "Luminosité"
+
+robot_controller --> metrics_manager : "Métriques"
+metrics_manager --> bt_manager_robot : "Paquets télémétrie"
+
+legend right
+    |= Composant |= Technologies |
+    | Backend | Python 3.8+, FastAPI, Uvicorn |
+    | BLE | Bleak 0.21+ |
+    | Base de données | SQLite, SQLAlchemy 2.0+ |
+    | Robot | Arduino UNO, C++ |
+    | Communication | Bluetooth Low Energy |
+    | Frontend | HTML5, JavaScript ES6+, CSS3 |
+endlegend
+
+@enduml

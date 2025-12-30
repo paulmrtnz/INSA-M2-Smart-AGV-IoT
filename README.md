@@ -122,6 +122,17 @@ python run.py
 ### Pour le Robot Arduino
 ➡️ **[Consultez le README complet du robot](robot/README.md)**
 
+### Diagrammes d'Architecture
+➡️ **[Consultez les diagrammes UML complets](docs/diagrams/README.md)**
+
+Les diagrammes incluent :
+- **Architecture globale** : Vue d'ensemble en couches
+- **Vue d'ensemble système** : Composants et interactions
+- **Machine à états Robot** : Comportement firmware Arduino
+- **Machine à états Application** : Cycle de vie application web
+- **Séquence fonctionnement global** : Scénario complet d'utilisation
+- **Diagramme de déploiement** : Infrastructure technique
+
 ## Architecture Globale
 
 ```

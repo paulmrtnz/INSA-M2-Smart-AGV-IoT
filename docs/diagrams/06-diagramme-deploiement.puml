@@ -1,0 +1,204 @@
+@startuml Diagramme_Deploiement
+skinparam backgroundColor white
+skinparam shadowing false
+
+title Diagramme de Déploiement\nProjet INSA CVL - Smart AGV IoT
+
+node "Poste Développeur / Serveur" as dev_machine {
+    node "Environnement Python 3.8+" as python_env {
+        artifact "venv" as venv {
+            component "FastAPI 0.104.1" as fastapi
+            component "Uvicorn 0.24.0" as uvicorn
+            component "Bleak 0.21.1" as bleak
+            component "SQLAlchemy 2.0.23" as sqlalchemy
+            component "Jinja2 3.1.2" as jinja2
+        }
+        
+        folder "Application Web" as app_folder {
+            component "main.py" as main
+            component "routes.py" as routes
+            
+            folder "api/" as api_folder {
+                component "bluetooth.py" as bt_api
+                component "telemetry.py" as tel_api
+                component "maintenance.py" as maint_api
+                component "websocket_manager.py" as ws_api
+            }
+            
+            folder "services/" as services_folder {
+                component "ble_manager.py" as ble_svc
+            }
+            
+            folder "models/" as models_folder {
+                component "database.py" as db_config
+                component "telemetry.py" as models
+            }
+            
+            folder "static/" as static_folder {
+                component "JavaScript" as js
+                component "CSS" as css
+            }
+            
+            folder "templates/" as templates_folder {
+                component "dashboard.html" as dashboard
+                component "history.html" as history
+            }
+        }
+        
+        database "robot_data.db" as sqlite {
+            storage "telemetry" as tel_table
+            storage "events" as evt_table
+            storage "statistics" as stats_table
+            storage "connection_log" as log_table
+        }
+    }
+    
+    node "Serveur HTTP" as http_server {
+        artifact "Uvicorn ASGI" as asgi_server
+        note right of asgi_server
+            Port: 8000
+            Host: 0.0.0.0
+            Reload: true (dev)
+        end note
+    }
+}
+
+cloud "Réseau Local WiFi/LAN" as network {
+    node "Bluetooth Low Energy" as ble_network {
+        artifact "Protocole BLE" as ble_proto
+        note right of ble_proto
+            UUID Write: 0xFFE2
+            UUID Notify: 0xFFE1
+            Portée: ~10 mètres
+            Fréquence: 2.4 GHz
+        end note
+    }
+}
+
+node "Poste Client (Utilisateur)" as client_machine {
+    node "Navigateur Web" as browser {
+        component "Interface HTML/CSS/JS" as ui
+        component "WebSocket Client" as ws_client
+        
+        note right of browser
+            Navigateurs supportés:
+            - Chrome/Edge
+            - Firefox
+            - Safari
+        end note
+    }
+}
+
+node "Robot AGV - Keyestudio KS0555" as robot_hardware {
+    node "Arduino UNO (ATmega328P)" as arduino {
+        artifact "Firmware C++" as firmware {
+            component "arduino_sketch.ino" as sketch
+            component "Robot.cpp" as robot_class
+            component "MotorController.cpp" as motors
+            component "UltrasonicSensor.cpp" as ultrasonic
+            component "LineTracker.cpp" as line
+            component "BluetoothManager.cpp" as bt_mgr
+            component "LEDMatrix.cpp" as led
+            component "MetricsManager.cpp" as metrics
+        }
+        
+        note bottom of firmware
+            Compilé avec Arduino IDE
+            Taille: ~15-20KB
+            Upload via USB
+        end note
+    }
+    
+    node "Module Bluetooth HC-05/06" as bt_module {
+        component "Serial UART" as uart
+        note right of uart
+            Baud: 9600
+            TX/RX pins
+        end note
+    }
+    
+    node "Capteurs" as sensors {
+        component "HC-SR04\nUltrason" as us_sensor
+        component "3x IR\nLigne" as ir_line
+        component "Photorésistance" as photo
+        component "Récepteur IR" as ir_recv
+    }
+    
+    node "Actionneurs" as actuators {
+        component "2x Moteurs DC\n+ Driver L298N" as dc_motors
+        component "LED Matrix\n8x16" as led_matrix
+    }
+    
+    node "Alimentation" as power {
+        component "Batteries\n7-12V" as battery
+    }
+}
+
+' Relations déploiement
+main --> fastapi : utilise
+main --> uvicorn : lance
+routes --> jinja2 : rend templates
+bt_api --> ble_svc : appelle
+ble_svc --> bleak : utilise
+tel_api --> models : query
+models --> sqlalchemy : ORM
+sqlalchemy --> sqlite : stocke
+
+asgi_server --> main : exécute
+asgi_server ..> network : HTTP :8000
+
+browser ..> network : HTTP/WebSocket
+network ..> asgi_server
+
+ble_svc ..> ble_network : BLE
+ble_network ..> bt_module : BLE
+
+bt_module --> uart : Serial
+uart --> bt_mgr : TX/RX
+bt_mgr --> robot_class : messages
+robot_class --> motors : commandes
+robot_class --> led : affichage
+robot_class --> metrics : collecte
+
+us_sensor --> robot_class : distance
+ir_line --> robot_class : ligne
+photo --> robot_class : luminosité
+ir_recv --> robot_class : commandes
+
+dc_motors --> power : 7-12V
+arduino --> power : 5V (régulateur)
+battery --> power : alimente
+
+legend right
+    |= Environnement |= Technologies |
+    | Backend | Python 3.8+, FastAPI |
+    | Frontend | HTML5, CSS3, JavaScript |
+    | Communication | BLE, HTTP, WebSocket |
+    | Base de données | SQLite |
+    | Robot | Arduino UNO, C++ |
+    | Capteurs | HC-SR04, IR, Photorésistance |
+    | Actionneurs | Moteurs DC, LED Matrix |
+    
+    |= Déploiement |= Configuration |
+    | Serveur web | Port 8000 |
+    | BLE | UUID 0xFFE1/0xFFE2 |
+    | Bluetooth | 9600 baud |
+    | Portée BLE | ~10 mètres |
+endlegend
+
+note bottom of dev_machine
+    Configuration développement:
+    - OS: Windows/Linux/macOS
+    - Python virtual environment
+    - Hot reload activé
+end note
+
+note bottom of robot_hardware
+    Keyestudio Mini Tank Robot V3 (KS0555)
+    - Microcontrôleur: ATmega328P
+    - Tension logique: 5V
+    - Tension moteurs: 7-12V
+    - Mémoire: 32KB Flash, 2KB RAM
+end note
+
+@enduml

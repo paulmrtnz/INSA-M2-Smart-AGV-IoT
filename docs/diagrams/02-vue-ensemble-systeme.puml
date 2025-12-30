@@ -1,0 +1,125 @@
+@startuml Vue_Ensemble_Systeme
+skinparam backgroundColor white
+skinparam shadowing false
+
+title Vue d'Ensemble du Système IoT AGV\nProjet INSA CVL - Smart AGV IoT
+
+actor Utilisateur as user
+
+rectangle "Application Web FastAPI" as app {
+    rectangle "Interface Web" as ui {
+        component "Dashboard" as dashboard
+        component "Historique" as history
+        component "Diagnostic" as diagnostic
+    }
+    
+    rectangle "API REST (25+ endpoints)" as api {
+        component "Bluetooth API" as bt_api
+        component "Telemetry API" as telemetry_api
+        component "Maintenance API" as maint_api
+    }
+    
+    rectangle "Services" as services {
+        component "BLE Manager" as ble_mgr
+        component "WebSocket Manager" as ws_mgr
+    }
+    
+    database "Base de Données\nSQLite" as db {
+        storage "Télémétrie" as tel_table
+        storage "Événements" as event_table
+        storage "Statistiques" as stats_table
+        storage "Logs connexion" as log_table
+    }
+}
+
+cloud "Bluetooth Low Energy\nProtocole Sans Fil" as ble_proto {
+    component "Canal BLE" as ble_channel
+    note right of ble_channel
+        UUID Write: 0xFFE2
+        UUID Notify: 0xFFE1
+        Portée: ~10m
+    end note
+}
+
+rectangle "Robot AGV Arduino" as robot {
+    component "Machine à États\nRobot Controller" as fsm
+    
+    rectangle "Capteurs" as sensors {
+        component "Ultrason HC-SR04" as us
+        component "3x IR Ligne" as line
+        component "Photorésistance" as photo
+        component "Récepteur IR" as ir_recv
+    }
+    
+    rectangle "Actionneurs" as actuators {
+        component "2x Moteurs DC" as motors
+        component "LED Matrix 8x16" as led
+    }
+    
+    rectangle "Communication" as comm {
+        component "Bluetooth Manager" as bt_mgr_robot
+        component "Metrics Manager" as metrics
+    }
+}
+
+' Flux principaux
+user --> dashboard : "Accès web\nhttp://localhost:8000"
+user --> history : "Consulte historique"
+user --> diagnostic : "Tests système"
+
+dashboard --> bt_api : "Connexion robot\nEnvoi commandes"
+history --> telemetry_api : "Requêtes données"
+diagnostic --> maint_api : "Maintenance BDD"
+
+bt_api --> ble_mgr : "Commandes BLE"
+telemetry_api --> db : "Lecture données"
+maint_api --> db : "Nettoyage/Stats"
+
+ble_mgr <--> ble_channel : "Envoi commandes\nRéception télémétrie"
+ble_mgr --> ws_mgr : "Notifications"
+ws_mgr --> dashboard : "WebSocket\ntemps réel"
+ble_mgr --> db : "Stockage télémétrie"
+
+ble_channel <--> bt_mgr_robot : "Communication\nbidirectionnelle"
+
+' Flux robot interne
+bt_mgr_robot --> fsm : "Commandes\nreçues"
+fsm --> bt_mgr_robot : "Télémétrie\nà envoyer"
+
+us --> fsm : "Distance: X cm"
+line --> fsm : "Ligne détectée"
+photo --> fsm : "Luminosité"
+ir_recv --> fsm : "Commande IR"
+
+fsm --> motors : "Avancer/Tourner/Stop"
+fsm --> led : "Affichage état"
+
+fsm --> metrics : "Métriques collectées"
+metrics --> bt_mgr_robot : "Paquets JSON"
+
+note bottom of db
+    Stockage complet:
+    - UUID unique par paquet
+    - Checksum SHA256
+    - Timestamps précis
+    - 4 tables relationnelles
+end note
+
+note bottom of fsm
+    États principaux:
+    - STARTING
+    - WAITING_BT
+    - MANUAL
+    - AUTO
+    - OBSTACLE_DETECTED
+end note
+
+legend right
+    |= Type de Données |= Description |
+    | Télémétrie | Distance, vitesse, batterie, mode |
+    | Événements | Changements mode, obstacles, batterie |
+    | Statistiques | Agrégats pour graphiques |
+    | Logs | Historique connexions BLE |
+endlegend
+
+@enduml

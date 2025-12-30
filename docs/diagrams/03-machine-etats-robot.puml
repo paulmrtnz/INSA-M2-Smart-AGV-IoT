@@ -1,0 +1,173 @@
+@startuml Machine_Etats_Robot
+skinparam backgroundColor white
+skinparam shadowing false
+
+title Machine à États du Robot AGV Arduino\nProjet INSA CVL - Smart AGV IoT
+
+[*] --> STARTING : Power On / Reset
+
+state STARTING {
+    state "Initialisation matérielle" as init
+    init : - Configuration des pins
+    init : - Setup capteurs/actionneurs
+    init : - Affichage logo PGP
+    init : - Démarrage Bluetooth (9600 baud)
+    
+    [*] --> init
+    init --> [*] : Après 2 secondes
+}
+
+STARTING --> WAITING_BT : Initialisation complète
+
+state WAITING_BT {
+    state "Attente connexion Bluetooth" as wait_bt
+    wait_bt : - Affichage "Waiting BT..."
+    wait_bt : - LED Matrix clignote
+    wait_bt : - Moteurs désactivés
+    wait_bt : - Écoute messages BT entrants
+    
+    [*] --> wait_bt
+}
+
+WAITING_BT --> MANUAL : Connexion BLE établie\n(message "CONNECTED")
+
+state MANUAL {
+    state "Mode Manuel" as manual_mode
+    manual_mode : - Attente commandes
+    manual_mode : - Traitement commandes IR
+    manual_mode : - Traitement commandes BLE
+    manual_mode : - Contrôle manuel moteurs
+    manual_mode : - Gestion phares (IR 1/2)
+    manual_mode : - Affichage LED état
+    
+    [*] --> manual_mode
+    
+    state "Traitement Commande" as cmd_process {
+        state "Commande IR reçue" as ir_cmd
+        state "Commande BLE reçue" as ble_cmd
+        
+        ir_cmd : ↑ (0xFF629D) = Avancer
+        ir_cmd : ↓ (0xFFA857) = Reculer
+        ir_cmd : ← (0xFF22DD) = Tourner gauche
+        ir_cmd : → (0xFFC23D) = Tourner droite
+        ir_cmd : OK (0xFF02FD) = Stop
+        ir_cmd : 4 (0xFF30CF) = Rotation gauche
+        ir_cmd : 6 (0xFF7A85) = Rotation droite
+        
+        ble_cmd : "forward" = Avancer
+        ble_cmd : "backward" = Reculer
+        ble_cmd : "left" = Gauche
+        ble_cmd : "right" = Droite
+        ble_cmd : "stop" = Arrêt
+    }
+    
+    manual_mode --> cmd_process : Commande reçue
+    cmd_process --> manual_mode : Exécution commande
+}
+
+state AUTO {
+    state "Mode Automatique" as auto_mode
+    auto_mode : - Navigation autonome
+    auto_mode : - Suivi de ligne (3 IR)
+    auto_mode : - Détection obstacle continue
+    auto_mode : - Ajustement vitesse
+    auto_mode : - Gestion phares automatique
+    auto_mode : - Affichage LED "AUTO"
+    
+    [*] --> auto_mode
+    
+    state "Navigation Ligne" as line_nav {
+        state "Analyse capteurs ligne" as line_read
+        state "Calcul direction" as calc_dir
+        state "Ajustement moteurs" as adjust_motors
+        
+        line_read : L=0, M=0, R=0 → Avancer
+        line_read : L=0, M=1, R=0 → Avancer
+        line_read : L=1, M=0, R=0 → Tourner gauche
+        line_read : L=0, M=0, R=1 → Tourner droite
+        line_read : L=1, M=1, R=1 → Stop (perte ligne)
+        
+        [*] --> line_read
+        line_read --> calc_dir
+        calc_dir --> adjust_motors
+        adjust_motors --> line_read : Boucle continue (100ms)
+    }
+    
+    auto_mode --> line_nav : Suivi ligne actif
+    line_nav --> auto_mode
+}
+
+state OBSTACLE_DETECTED {
+    state "Obstacle détecté" as obstacle
+    obstacle : - Arrêt immédiat moteurs
+    obstacle : - Affichage LED "!!!"
+    obstacle : - LED externe clignote
+    obstacle : - Enregistrement événement
+    obstacle : - Attente dégagement
+    
+    [*] --> obstacle
+    
+    state "Vérification distance" as check_dist
+    check_dist : Distance > 25cm ?
+    
+    obstacle --> check_dist : Mesure continue (500ms)
+}
+
+' Transitions principales
+MANUAL --> AUTO : IR # (0xFF52AD)\nou Commande BLE "auto"
+AUTO --> MANUAL : IR * (0xFF42BD)\nou Commande BLE "manual"
+
+AUTO --> OBSTACLE_DETECTED : Distance < 25cm
+MANUAL --> OBSTACLE_DETECTED : Distance < 25cm
+OBSTACLE_DETECTED --> AUTO : Distance > 25cm\n+ Mode était AUTO
+OBSTACLE_DETECTED --> MANUAL : Distance > 25cm\n+ Mode était MANUAL
+
+MANUAL --> WAITING_BT : Déconnexion BLE\n(message "DISCONNECTED")
+AUTO --> WAITING_BT : Déconnexion BLE\n(message "DISCONNECTED")
+OBSTACLE_DETECTED --> WAITING_BT : Déconnexion BLE
+
+note top of STARTING
+    État initial au démarrage
+    ou après reset Arduino
+end note
+
+note right of WAITING_BT
+    État de sécurité:
+    - Aucun mouvement possible
+    - Attente active connexion
+end note
+
+note bottom of MANUAL
+    Contrôle total utilisateur:
+    - Via télécommande IR
+    - Via application web BLE
+end note
+
+note bottom of AUTO
+    Navigation autonome:
+    - Suivi ligne noir/blanc
+    - Évitement automatique
+end note
+
+note left of OBSTACLE_DETECTED
+    Sécurité prioritaire:
+    - Bloque tout mouvement
+    - Actif dans tous les modes
+    - Seuil: 25cm
+end note
+
+legend right
+    |= Événement |= Source |
+    | Commande IR | Télécommande infrarouge |
+    | Commande BLE | Application web FastAPI |
+    | Obstacle | Capteur ultrason HC-SR04 |
+    | Ligne | 3x capteurs IR ligne |
+    | Connexion | Module Bluetooth |
+    
+    |= Intervalle |= Valeur |
+    | Vérif. capteurs | 100ms |
+    | Vérif. obstacles | 500ms |
+    | Envoi télémétrie | 30s |
+endlegend
+
+@enduml
