@@ -329,4 +329,4 @@ Pour toute question sur les diagrammes, contacter l'équipe projet :
 ---
 
 **Développé avec ❤️ par Paul MARTINEZ, Guilherme DE CONTE MAZUR, Phu KHONG**  
-**Documentation générée le 30/12/2025**
+**Documentation : Décembre 2025**
