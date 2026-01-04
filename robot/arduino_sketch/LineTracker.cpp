@@ -31,40 +31,34 @@ LineCorrection LineTracker::getCorrection()
     {
         // Middle sensor is on the line - we're following correctly
         _lostCounter = 0; // Reset counter
-
-        if (_leftValue == BLACK && _rightValue == WHITE)
+        if (_leftValue == BLACK && _rightValue == WHITE) // Left on line, right off line → turn left
         {
-            // Left on line, right off line → turn left
             return LineCorrection::TURN_LEFT;
         }
-        else if (_leftValue == WHITE && _rightValue == BLACK)
-        {
-            // Left off line, right on line → turn right
+        else if (_leftValue == WHITE && _rightValue == BLACK) // Left off line, right on line → turn right
+        {   
             return LineCorrection::TURN_RIGHT;
         }
-        else
+        else // Middle on line, go straight
         {
-            // Middle on line, go straight
             return LineCorrection::GO_STRAIGHT;
         }
     }
-    else
+    else // Middle sensor is NOT on the line - we've lost it
     {
-        // Middle sensor is NOT on the line - we've lost it
-        if (_leftValue == BLACK && _rightValue == WHITE)
+        if (_leftValue == BLACK && _rightValue == WHITE) // Left on line, right off line → turn left
         {
-            // Left on line, right off line → turn left
             _lostCounter = 0; // Reset counter
             return LineCorrection::TURN_LEFT;
         }
-        else if (_leftValue == WHITE && _rightValue == BLACK)
+        else if (_leftValue == WHITE && _rightValue == BLACK) // Left off line, right on line → turn right
         {
-            // Left off line, right on line → turn right
             _lostCounter = 0; // Reset counter
             return LineCorrection::TURN_RIGHT;
         }
         else
         {
+            return LineCorrection::STOP;
             // No sensor on the line → stop
             // return LineCorrection::STOP;
             /*
@@ -83,7 +77,7 @@ LineCorrection LineTracker::getCorrection()
             }
             else
             */
-                return LineCorrection::STOP;
+ 
             
         }
     }

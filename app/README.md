@@ -1,25 +1,63 @@
-# Application Web IoT Robot AGV - PGP Solutions
-# Documentation
+<div align="center">
 
-> **Application FastAPI pour le contrôle d'un robot Arduino via Bluetooth Low Energy**  
-> Version 2.0.0 | Architecture moderne avec async/await natif
+# Application Web IoT - Robot AGV
 
----
+### Interface de Contrôle et Supervision Temps Réel
 
-## Table des Matières
-
-1. [Stack Technologique](#-stack-technologique)
-2. [Architecture de l'Application](#-architecture-de-lapplication)
-3. [Architecture de la Base de Données](#-architecture-de-la-base-de-données)
-4. [Prise en Main Rapide](#-prise-en-main-rapide)
-5. [Structure des Fichiers](#-structure-des-fichiers)
-6. [API Endpoints](#-api-endpoints)
-7. [Interface Web](#-interface-web)
-8. [Maintenance et Monitoring](#-maintenance-et-monitoring)
+**Application FastAPI moderne pour le contrôle d'un robot Arduino via Bluetooth Low Energy**
 
 ---
 
-## Stack Technologique
+**Projet** : Plateforme IoT AGV | **Auteurs** : Paul MARTINEZ, Guilherme DE CONTE MAZUR, Phu KHONG
+
+**INSA Centre Val de Loire** | Décembre 2025
+
+</div>
+
+---
+
+## Table des matières
+
+1. [Vue d'ensemble](#vue-densemble)
+2. [Stack technologique](#stack-technologique)
+3. [Architecture de l'application](#architecture-de-lapplication)
+4. [Base de données SQLite](#base-de-données-sqlite)
+5. [API REST](#api-rest)
+6. [Interface Web](#interface-web)
+7. [Installation](#installation)
+8. [Utilisation](#utilisation)
+9. [Développement](#développement)
+
+---
+
+## Vue d'ensemble
+
+L'application web constitue le **cœur de la supervision** du robot AGV. Elle offre :
+
+- ✅ **Interface web moderne** avec dashboard interactif
+- ✅ **API REST complète** (25+ endpoints documentés)
+- ✅ **Communication Bluetooth Low Energy** bidirectionnelle
+- ✅ **WebSocket temps réel** pour les notifications
+- ✅ **Base de données SQLite** avec 4 tables optimisées
+- ✅ **Télémétrie historique** avec graphiques dynamiques
+
+### Composants principaux
+
+```
+┌─────────────────────────────────────────────────┐
+│            Application FastAPI                  │
+├─────────────────────────────────────────────────┤
+│  1. Routes HTML (Jinja2 templates)              │
+│  2. API REST (Bluetooth, Telemetry, Diagnostic) │
+│  3. WebSocket Manager (notifications push)      │
+│  4. BLE Manager (Bleak - asyncio)               │
+│  5. ORM SQLAlchemy (base de données)            │
+└─────────────────────────────────────────────────┘
+```
+
+---
+
+## Stack technologique
 
 ### Backend
 - **FastAPI 0.104+** - Framework web moderne avec support async natif
@@ -44,9 +82,9 @@
 
 ---
 
-## Architecture de l'Application
+## Architecture de l'application
 
-### Vue d'Ensemble
+### Vue d'ensemble
 
 L'application suit une **architecture modulaire en couches** avec séparation des responsabilités :
 
@@ -92,9 +130,9 @@ L'application suit une **architecture modulaire en couches** avec séparation de
 └────────────────────────────────────────────────────┘
 ```
 
-### Modules Principaux
+### Modules principaux
 
-#### 1. **Point d'Entrée** (`main.py`)
+#### 1. **Point d'entrée** (`main.py`)
 ```python
 # Initialise l'application FastAPI
 app = create_app()
@@ -371,7 +409,6 @@ Une fois lancé, l'application est accessible sur :
 1. Ouvrir http://localhost:8000
 2. Cliquer sur **"Connecter Bluetooth"**
 3. Attendre le voyant vert ✅
-4. Tester l'envoi d'un message ou une commande moteur
 
 
 ## Structure des Fichiers

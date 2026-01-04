@@ -1,25 +1,32 @@
-# Robot Autonome AGV - PGP Solutions
-# Documentation
+<div align="center">
+
+# Robot Arduino AGV - Keyestudio KS0555
+
+### Véhicule Autonome à Guidage Automatique
+
+**Firmware embarqué C++ pour navigation autonome et télémétrie Bluetooth**
+
+---
+
+**Projet** : Plateforme IoT AGV | **Auteurs** : Paul MARTINEZ, Guilherme DE CONTE MAZUR, Phu KHONG
+
+**INSA Centre Val de Loire** | Décembre 2025
+
+</div>
+
+---
 
 ## Table des matières
-- [Robot Autonome AGV - Mini Tank Robot V3 (KS0555)](#robot-autonome-agv---mini-tank-robot-v3-ks0555)
-  - [Table des matières](#table-des-matières)
-  - [Vue d'ensemble](#vue-densemble)
-  - [Caractéristiques principales](#caractéristiques-principales)
-  - [Architecture du système](#architecture-du-système)
-  - [Composants matériels](#composants-matériels)
-    - [Contrôleur](#contrôleur)
-    - [Capteurs](#capteurs)
-    - [Actionneurs](#actionneurs)
-  - [Scénarios de fonctionnement](#scénarios-de-fonctionnement)
-    - [1 Suivi de ligne avec évitement d'obstacles (Mode Automatique)](#1-suivi-de-ligne-avec-évitement-dobstacles-mode-automatique)
-    - [2 Gestion de la lumière ambiante](#2-gestion-de-la-lumière-ambiante)
-    - [3 Télémétrie Bluetooth (Communication hôte)](#3-télémétrie-bluetooth-communication-hôte)
-    - [4 Mode Contrôle infrarouge (Mode Manuel)](#4-mode-contrôle-infrarouge-mode-manuel)
-  - [Structure du code](#structure-du-code)
-    - [Flux d'exécution](#flux-dexécution)
-  - [Documentation complète](#documentation-complète)
-  - [Dépannage](#dépannage)
+
+1. [Vue d'ensemble](#vue-densemble)
+2. [Caractéristiques](#caractéristiques)
+3. [Architecture matérielle](#architecture-matérielle)
+4. [Composants](#composants)
+5. [Modes de fonctionnement](#modes-de-fonctionnement)
+6. [Structure du code](#structure-du-code)
+7. [Configuration Arduino IDE](#configuration-arduino-ide)
+8. [Télémétrie Bluetooth](#télémétrie-bluetooth)
+9. [Dépannage](#dépannage)
 
 ## Vue d'ensemble
 
@@ -105,7 +112,7 @@ Ce projet est une implémentation du **Keyestudio Mini Tank Robot V3 (KS0555)**,
 
 ## Scénarios de fonctionnement
 
-### 1 Suivi de ligne avec évitement d'obstacles (Mode Automatique)
+### 1 Suivi de ligne avec évitement d'obstacles (mode automatique)
 **Objectif**: Suivre automatiquement une ligne sur le sol pour gérer le déplacement dans des espaces partagés.
 
 **Fonctionnement**:
@@ -133,7 +140,7 @@ Ce projet est une implémentation du **Keyestudio Mini Tank Robot V3 (KS0555)**,
 - Communication série via module Bluetooth HC-05/06
 - Envoi de paquets de données mesurées sur l'appareil
 
-### 4 Mode Contrôle infrarouge (Mode Manuel)
+### 4 Mode contrôle infrarouge (mode manuel)
 **Objectif**: Pilotage manuel via la télécommande (pour maintenance ou prise en main d'urgence)
 
 **Fonctionnement**:
