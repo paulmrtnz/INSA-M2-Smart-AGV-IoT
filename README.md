@@ -14,6 +14,8 @@
 
 **Date** : Décembre 2025
 
+<img src="https://skills.syvixor.com/api/icons?i=python,arduino,fastapi,sql,cpp&perline=12&radius=40" alt="Skill Icons" />
+
 </div>
 
 ---
